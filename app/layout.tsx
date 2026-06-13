@@ -1,21 +1,17 @@
-﻿import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
-import { CLINIC_NAME } from "@/lib/constants";
+import type { Metadata } from "next";
+import { Manrope } from "next/font/google";
+import { dictionaries } from "@/lib/content";
+import { LanguageProvider } from "@/components/dentty/LanguageProvider";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
-  subsets: ["latin", "latin-ext"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin", "latin-ext"],
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin", "cyrillic"],
 });
 
 export const metadata: Metadata = {
-  title: CLINIC_NAME,
-  description: "Stomatologie modernă pentru întreaga familie — implanturi, estetică dentară și tratamente fără durere.",
+  title: dictionaries.ro.meta.title,
+  description: dictionaries.ro.meta.description,
 };
 
 export default function RootLayout({
@@ -24,8 +20,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ro" className={`${jakarta.variable} ${inter.variable} antialiased scroll-smooth`}>
-      <body>{children}</body>
+    <html lang="ro" className={`${manrope.variable} antialiased scroll-smooth`}>
+      <body>
+        <LanguageProvider>{children}</LanguageProvider>
+      </body>
     </html>
   );
 }

@@ -1,24 +1,124 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 @theme inline {
-  --color-brand-teal: #3B6EA8;
-  --color-brand-black: #0F172A;
-  --color-brand-grey: #F8FAFC;
-  --color-brand-white: #FFFFFF;
-  --color-brand-muted: #E2E8F0;
+  --color-ink: #14191f;
+  --color-ink-soft: #28323f;
+  --color-paper: #fbfbfb;
+  --color-shell: #1d242b;
 
-  --font-primary: var(--font-jakarta), sans-serif;
-  --font-secondary: var(--font-inter), sans-serif;
+  --font-primary: var(--font-manrope), sans-serif;
 }
 
 :root {
-  --background: #FFFFFF;
-  --foreground: #0F172A;
+  --background: #1d242b;
+  --foreground: #fbfbfb;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
+  margin: 0;
+  background: #1d242b;
   color: var(--foreground);
-  font-family: var(--font-secondary);
-  scroll-behavior: smooth;
+  font-family: var(--font-manrope), Manrope, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Service cards: show only the name; reveal the description on hover. On
+ * touch devices (no hover) the description is always visible.
+ */
+.svc-desc {
+  margin-top: 5px;
+}
+@media (hover: hover) {
+  .svc-desc {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
+  }
+  .svc-card:hover .svc-desc {
+    max-height: 80px;
+    opacity: 1;
+    margin-top: 5px;
+  }
+}
+
+/*
+ * Sticky-stack reveal: the hero is pinned full-screen, and the white + navy
+ * sections slide up over it. Below 980px the stack is flattened so the page
+ * scrolls as ordinary stacked blocks. Mirrors the mockup's media query.
+ */
+@media (max-width: 980px) {
+  #home {
+    position: relative !important;
+    top: 0 !important;
+  }
+  #main,
+  #services,
+  #cases,
+  #reviews {
+    position: relative !important;
+    top: 0 !important;
+    margin: 0 !important;
+  }
+  /* Team: drop the pinned horizontal sweep, stack panels vertically. */
+  #team {
+    position: relative !important;
+    top: 0 !important;
+    height: auto !important;
+  }
+  #team-stage {
+    height: auto !important;
+    overflow: visible !important;
+    padding-top: 0 !important;
+  }
+  #team-viewport {
+    overflow: visible !important;
+  }
+  #team-strip {
+    flex-direction: column !important;
+    transform: none !important;
+    width: auto !important;
+    height: auto !important;
+    gap: 20px !important;
+  }
+  .team-panel {
+    flex-basis: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+  .team-grid {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+  }
+  .team-photo {
+    aspect-ratio: 4 / 3 !important;
+  }
+  #hero-title {
+    font-size: clamp(38px, 10vw, 62px) !important;
+    max-width: 100% !important;
+  }
+  #nav-links {
+    display: none !important;
+  }
+  #nav-burger {
+    display: flex !important;
+  }
+  #clinic-grid {
+    grid-template-columns: 1fr !important;
+  }
+  #services-grid,
+  #cases-grid,
+  #reviews-grid {
+    grid-template-columns: 1fr !important;
+  }
+  #contact-grid {
+    grid-template-columns: 1fr !important;
+  }
 }

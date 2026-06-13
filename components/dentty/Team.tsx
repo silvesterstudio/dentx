@@ -1,0 +1,252 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { CLINIC_TEL } from "@/lib/constants";
+import { useContent } from "./LanguageProvider";
+import ImageSlot from "./ImageSlot";
+
+const CALL_HREF = `tel:${CLINIC_TEL}`;
+
+// Vertical scroll (svh) spent per member transition while the team is pinned.
+const DWELL_VH = 70;
+
+const HEADING = {
+  margin: "10px 0 0",
+  color: "#28323f",
+  fontSize: "clamp(40px, 4.6vw, 84px)",
+  fontWeight: 500,
+  lineHeight: 0.98,
+  letterSpacing: "-0.03em",
+} as const;
+
+const EYEBROW = {
+  color: "rgba(40,50,63,0.6)",
+  fontSize: 13,
+  fontWeight: 500,
+} as const;
+
+/**
+ * Team — its own pinned layer so Servicii slides over it like every other
+ * section, while still doing the reference's horizontal sweep. The section is
+ * sticky (top:0) and taller than the viewport; a zero-height #team-sentinel
+ * rendered just before it in the flow gives a sticky-proof read of how far
+ * we've scrolled into the pin, which drives the strip's horizontal translate.
+ * Same white as Clinica noastră with no edge between them, so the two read as
+ * one continuous block. Below 980px globals.css stacks the panels.
+ */
+export default function Team() {
+  const t = useContent();
+  const members = t.team.members;
+  const total = members.length;
+
+  const stripRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 980px)");
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const strip = stripRef.current;
+      const bar = barRef.current;
+      const sentinel = document.getElementById("team-sentinel");
+      if (!strip) return;
+      if (mq.matches || !sentinel) {
+        strip.style.transform = "";
+        if (bar) bar.style.transform = "";
+        return;
+      }
+      const vh = window.innerHeight || 1;
+      const scrollDist = Math.max(1, (total - 1) * (DWELL_VH / 100) * vh);
+      const offset = -sentinel.getBoundingClientRect().top; // 0 at pin start, grows
+      const p = Math.min(1, Math.max(0, offset / scrollDist));
+      // Panels are flex:0 0 100% in a 100%-wide strip → one panel = 100%.
+      strip.style.transform = `translate3d(${-((total - 1) * 100 * p)}%,0,0)`;
+      if (bar) bar.style.transform = `scaleX(${p})`;
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [total]);
+
+  return (
+    <section
+      id="team"
+      data-screen-label="Team"
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 3,
+        height: `calc(100svh + ${(total - 1) * DWELL_VH}svh)`,
+        background: "#fbfbfb",
+      }}
+    >
+      <div
+        id="team-stage"
+        style={{
+          height: "100svh",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          paddingTop: "clamp(84px, 11vh, 116px)",
+          paddingBottom: "clamp(24px, 3vw, 44px)",
+        }}
+      >
+        {/* header */}
+        <div style={{ padding: "0 clamp(20px, 2.4vw, 44px)", flexShrink: 0 }}>
+          <div style={{ maxWidth: 1760, margin: "0 auto", width: "100%" }}>
+            <div style={EYEBROW}>{t.team.eyebrow}</div>
+            <h2 style={HEADING}>{t.team.title}</h2>
+            <div
+              style={{
+                marginTop: "clamp(12px, 1.4vw, 20px)",
+                height: 3,
+                borderRadius: 999,
+                background: "rgba(40,50,63,0.12)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                ref={barRef}
+                style={{
+                  height: "100%",
+                  borderRadius: 999,
+                  background: "#28323f",
+                  transformOrigin: "left",
+                  transform: "scaleX(0)",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* horizontal viewport */}
+        <div
+          id="team-viewport"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            display: "flex",
+            marginTop: "clamp(16px, 2vw, 28px)",
+          }}
+        >
+          <div
+            ref={stripRef}
+            id="team-strip"
+            style={{ display: "flex", width: "100%", height: "100%", willChange: "transform" }}
+          >
+            {members.map((m, i) => (
+              <div
+                key={m.name}
+                className="team-panel"
+                style={{
+                  flex: "0 0 100%",
+                  height: "100%",
+                  boxSizing: "border-box",
+                  padding: "0 clamp(20px, 2.4vw, 44px)",
+                }}
+              >
+                <div
+                  className="team-grid"
+                  style={{
+                    maxWidth: 1760,
+                    margin: "0 auto",
+                    height: "100%",
+                    display: "grid",
+                    gridTemplateColumns: "1.3fr 0.7fr",
+                    gap: 16,
+                    alignItems: "stretch",
+                  }}
+                >
+                  {/* photo */}
+                  <div
+                    className="team-photo"
+                    style={{
+                      position: "relative",
+                      borderRadius: 18,
+                      overflow: "hidden",
+                      background: "#e9e9e9",
+                    }}
+                  >
+                    <ImageSlot caption={`${t.team.photoPrefix} ${m.name}`} shape="rect" />
+                  </div>
+
+                  {/* info card */}
+                  <div
+                    className="team-info"
+                    style={{
+                      background: "#e9e9e9",
+                      borderRadius: 18,
+                      padding: "clamp(22px, 2.5vw, 32px)",
+                      display: "flex",
+                      flexDirection: "column",
+                      boxSizing: "border-box",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <span style={{ color: "rgba(40,50,63,0.55)", fontSize: 13 }}>
+                      {i + 1}/{total}
+                    </span>
+                    <div
+                      style={{
+                        color: "#28323f",
+                        fontSize: "clamp(24px, 2.2vw, 32px)",
+                        fontWeight: 600,
+                        marginTop: 18,
+                        letterSpacing: "-0.01em",
+                      }}
+                    >
+                      {m.name}
+                    </div>
+                    <div style={{ color: "rgba(40,50,63,0.6)", fontSize: 13.5, marginTop: 8 }}>
+                      {m.role}
+                    </div>
+                    <div style={{ flex: 1 }} />
+                    <p
+                      style={{
+                        color: "rgba(40,50,63,0.7)",
+                        fontSize: 13.5,
+                        lineHeight: 1.65,
+                        margin: "24px 0 0",
+                        textWrap: "pretty",
+                      }}
+                    >
+                      {m.bio}
+                    </p>
+                    <a
+                      href={CALL_HREF}
+                      style={{
+                        display: "block",
+                        background: "#28323f",
+                        color: "#fbfbfb",
+                        borderRadius: 12,
+                        padding: 16,
+                        fontSize: 14,
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        textAlign: "center",
+                        marginTop: 28,
+                      }}
+                    >
+                      {t.common.book}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
