@@ -1,124 +1,64 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import Preloader from "./Preloader";
+import RevealOnScroll from "./RevealOnScroll";
 import Header from "./Header";
 import Hero from "./Hero";
 import MainSection from "./MainSection";
 import Team from "./Team";
 import Services from "./Services";
 import CaseStudies from "./CaseStudies";
-import Reviews from "./Reviews";
 import Contact from "./Contact";
 
-// Scroll-driven blur: as a section gets covered by the next one, the WHOLE
-// outgoing section blurs in proportion to how far it's been covered.
-// MAX_BLUR is the notional "100%" blur; FINAL_PROGRESS caps the ramp so the
-// peak tops out below full — the section is never blurred all the way out.
-const MAX_BLUR = 8; // px at 100% coverage (never reached)
-const FINAL_PROGRESS = 0.8; // cap: blur peaks at 80% of MAX, not 100%
+// Scroll-driven cover-blur: as a section is covered by the next one rising over
+// it, the outgoing section blurs in proportion to how far it's been covered.
+const MAX_BLUR = 8; // px at full coverage
+const FINAL_PROGRESS = 0.8; // cap so it never blurs the section all the way out
 
-// The header scrim (gradient + blur) appears once the white panel has reached
-// the top — i.e., we've scrolled off the hero onto the content sections.
+// The header scrim appears once the white panel reaches the top.
 const SCRIM_AT = 40; // px: show scrim when #main top is at/above this line
 
-// Sections that pin with `top = viewportHeight - sectionHeight` and have the
-// next section slide up over them. (Hero is pinned at top:0; #main is a tall
-// relative block that scrolls over the hero and continuously into the team;
-// #team manages its own sticky pin + height for the horizontal sweep; Contact
-// is the final flow section.)
-const STICKY_IDS = ["services", "cases", "reviews"];
-
-// [sectionToBlur, sectionCoveringIt] — each outgoing section blurs as its
-// successor rises over it. Clinica noastră (#main) flows continuously into the
-// team (no overlay between them), so there's no blur there; navy Servicii then
-// slides over the white team.
-const BLUR_PAIRS: [string, string][] = [
-  ["home", "main"],
-  ["team", "services"],
-  ["services", "cases"],
-  ["cases", "reviews"],
-  ["reviews", "contact"],
-];
-
-// Every element that may have a scroll-blur applied — cleared on teardown and
-// when the layout flattens on mobile.
-const BLUR_TARGETS = ["home", "main", "team", "services", "cases", "reviews"];
-
 /**
- * Sticky-stack reveal + scroll-linked blur.
- *
- * Each sticky section pins at `top = viewportHeight - sectionHeight`, so the
- * next one scrolls up and over it. Heights are measured live and applied as
- * inline `top`. As a section is covered, it blurs progressively with scroll
- * (capped below full). The fixed header's scrim fades in once you leave the
- * hero. Below 980px globals.css flattens the stack and the blur is disabled.
+ * Sticky-stack reveal + cover-blur + header scrim. The reveal itself is pure
+ * CSS (sticky + z-index). On scroll we (a) blur each outgoing section as its
+ * successor covers it and (b) toggle the fixed header's scrim. Coverage is read
+ * from the COVERING section (#main, #work — both position:relative, so their
+ * getBoundingClientRect is accurate, unlike the sticky outgoing ones). The blur
+ * is skipped below 980px.
  */
 export default function DenttyHome() {
-  const [tops, setTops] = useState<Record<string, string>>({});
   const [showScrim, setShowScrim] = useState(false);
 
-  useLayoutEffect(() => {
-    const measure = () => {
-      const vh = window.innerHeight;
-      setTops((prev) => {
-        const next: Record<string, string> = {};
-        let changed = false;
-        for (const id of STICKY_IDS) {
-          const el = document.getElementById(id);
-          const v = el ? Math.round(vh - el.offsetHeight) + "px" : "0px";
-          next[id] = v;
-          if (prev[id] !== v) changed = true;
-        }
-        return changed ? next : prev;
-      });
-    };
-
-    const ro = new ResizeObserver(measure);
-    STICKY_IDS.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) ro.observe(el);
-    });
-    window.addEventListener("resize", measure);
-    measure();
-
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, []);
-
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 980px)");
     const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
-    const coverage = (el: HTMLElement | null, vh: number) =>
-      el ? clamp01((vh - el.getBoundingClientRect().top) / vh) : 0;
-    const applyBlur = (el: HTMLElement | null, progress: number) => {
-      if (!el) return;
-      const p = Math.min(progress, FINAL_PROGRESS);
-      el.style.filter = p > 0.001 ? `blur(${(p * MAX_BLUR).toFixed(2)}px)` : "";
-    };
+    const homeEl = document.getElementById("home");
+    const mainEl = document.getElementById("main");
+    // [outgoing section that gets blurred, covering section we measure].
+    // Team→Servicii is now a default scroll (no slide-over), so it's not blurred.
+    const pairs: [HTMLElement | null, HTMLElement | null][] = [
+      [homeEl, mainEl],
+    ];
 
     let raf = 0;
     const update = () => {
       raf = 0;
       const vh = window.innerHeight || 1;
-
-      if (mq.matches) {
-        BLUR_PAIRS.forEach(([target]) => {
-          const el = document.getElementById(target);
-          if (el) el.style.filter = "";
-        });
-      } else {
-        BLUR_PAIRS.forEach(([target, coverer]) =>
-          applyBlur(
-            document.getElementById(target),
-            coverage(document.getElementById(coverer), vh),
-          ),
-        );
+      for (const [target, coverer] of pairs) {
+        if (!target) continue;
+        let f = "";
+        if (coverer) {
+          const cov = clamp01((vh - coverer.getBoundingClientRect().top) / vh);
+          const p = Math.min(cov, FINAL_PROGRESS);
+          if (p > 0.001) f = `blur(${(p * MAX_BLUR).toFixed(2)}px)`;
+        }
+        if (target.style.filter !== f) {
+          target.style.filter = f;
+          // hint the compositor only while actually blurring
+          target.style.willChange = f ? "filter" : "auto";
+        }
       }
-
-      const main = document.getElementById("main");
-      const scrim = !!main && main.getBoundingClientRect().top <= SCRIM_AT;
+      const scrim = !!mainEl && mainEl.getBoundingClientRect().top <= SCRIM_AT;
       setShowScrim((prev) => (prev === scrim ? prev : scrim));
     };
 
@@ -134,26 +74,97 @@ export default function DenttyHome() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
-      BLUR_TARGETS.forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) el.style.filter = "";
+      pairs.forEach(([t]) => {
+        if (t) {
+          t.style.filter = "";
+          t.style.willChange = "auto";
+        }
       });
     };
   }, []);
 
-  const top = (id: string) => tops[id] ?? "0px";
+  // Smooth (eased) wheel scrolling. We intercept the wheel and lerp the actual
+  // scroll position toward an accumulated target, so scrolling GLIDES instead of
+  // jumping per notch. Crucially this does NOT snap to sections and does NOT
+  // debounce/chain gestures — it only smooths the raw scroll, so the old
+  // device-dependent snapping bugs can't happen. Keyboard, scrollbar and touch
+  // stay native; disabled on mobile and for reduced motion. Each frame's
+  // scrollTo fires a scroll event, so the cover-blur and the team's sentinel
+  // sweep animate smoothly along with it.
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mq = window.matchMedia("(max-width: 980px)");
+    if (reduce.matches) return; // honour reduced motion → plain native scroll
+
+    const EASE = 0.18; // higher = snappier, lower = floatier
+    const INSTANT = "instant" as ScrollBehavior;
+    const maxY = () =>
+      Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+    let target = window.scrollY;
+    let current = window.scrollY;
+    let raf = 0;
+
+    const loop = () => {
+      raf = 0;
+      const diff = target - current;
+      if (Math.abs(diff) < 0.5) {
+        current = target;
+        window.scrollTo({ top: Math.round(current), behavior: INSTANT });
+        return;
+      }
+      current += diff * EASE;
+      window.scrollTo({ top: Math.round(current), behavior: INSTANT });
+      raf = requestAnimationFrame(loop);
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      if (mq.matches || e.ctrlKey) return; // mobile / pinch-zoom → native
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // horizontal → native
+      e.preventDefault();
+      const dy =
+        e.deltaY *
+        (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1);
+      if (!raf) {
+        // Resync to reality in case a native scroll (keyboard / scrollbar /
+        // anchor) moved the page since the last gesture.
+        current = window.scrollY;
+        target = current;
+      }
+      target = Math.max(0, Math.min(maxY(), target + dy));
+      if (!raf) raf = requestAnimationFrame(loop);
+    };
+
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
 
   return (
     <div style={{ background: "#1d242b" }}>
+      <Preloader />
+      <RevealOnScroll />
       <Header showScrim={showScrim} />
       <Hero />
       <MainSection />
       {/* Sticky-proof marker: tracks scroll into the team's pinned sweep. */}
       <div id="team-sentinel" aria-hidden style={{ height: 0 }} />
       <Team />
-      <Services top={top("services")} />
-      <CaseStudies top={top("cases")} />
-      <Reviews top={top("reviews")} />
+      {/* Servicii + Cazuri + Recenzii fused into one continuous light block that
+          slides over the team and is scrolled through with ordinary native
+          scroll (no per-section snapping). */}
+      <section
+        id="work"
+        style={{ position: "relative", zIndex: 4, background: "#fbfbfb" }}
+      >
+        <Services />
+        <CaseStudies />
+      </section>
+      {/* Contact is a normal, shorter section beneath the fullscreen Cazuri
+          video. At the end of the cases, the fixed video card LIFTS up (tracked
+          in CaseStudies) to reveal Contact underneath — it does NOT slide over. */}
       <Contact />
     </div>
   );

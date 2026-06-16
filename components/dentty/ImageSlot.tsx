@@ -4,6 +4,7 @@
  * with their caption so the layout is pixel-accurate and real images can be
  * dropped in later. Fills its parent (width/height: 100%).
  */
+import Image from "next/image";
 
 type ImageSlotProps = {
   caption: string;
@@ -14,6 +15,9 @@ type ImageSlotProps = {
   /** When set, the real photo is rendered (cover) instead of the placeholder. */
   src?: string;
   alt?: string;
+  /** Hide the caption text in the placeholder (e.g. when the card already shows
+   *  the name elsewhere). The caption is still used as the alt text for src. */
+  showLabel?: boolean;
 };
 
 const ICON = (
@@ -41,22 +45,35 @@ export default function ImageSlot({
   dark = false,
   src,
   alt,
+  showLabel = true,
 }: ImageSlotProps) {
   const borderRadius = shape === "rect" ? 0 : radius;
 
   if (src) {
+    // Route real photos through next/image so they're resized to the displayed
+    // size and decoded asynchronously — the source files are multi-MB, and
+    // decoding the full bitmap on the main thread as the frame scrolls in was
+    // stalling the scroll. `fill` needs a positioned parent, so we provide our
+    // own relative wrapper (the layout containers aren't all positioned).
     return (
-      <img
-        src={src}
-        alt={alt ?? caption}
+      <span
         style={{
+          position: "relative",
+          display: "block",
           width: "100%",
           height: "100%",
-          objectFit: "cover",
-          display: "block",
           borderRadius,
+          overflow: "hidden",
         }}
-      />
+      >
+        <Image
+          src={src}
+          alt={alt ?? caption}
+          fill
+          sizes="(max-width: 980px) 100vw, 33vw"
+          style={{ objectFit: "cover" }}
+        />
+      </span>
     );
   }
 
@@ -99,7 +116,7 @@ export default function ImageSlot({
         }}
       />
       {ICON}
-      <span style={{ maxWidth: "90%" }}>{caption}</span>
+      {showLabel && <span style={{ maxWidth: "90%" }}>{caption}</span>}
     </div>
   );
 }

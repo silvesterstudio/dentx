@@ -33,14 +33,20 @@ export type Content = {
   services: {
     eyebrow: string;
     title: string;
-    items: { name: string; tagline: string }[];
+    quote: { small: string; big: string };
+    items: { name: string; tagline: string; details: string[] }[];
   };
   cases: {
     eyebrow: string;
     title: string;
     before: string;
     after: string;
-    items: { tag: string; title: string; result: string }[];
+    items: {
+      tag: string;
+      title: string;
+      result: string;
+      testimonial: { quote: string; author: string };
+    }[];
   };
   reviews: {
     eyebrow: string;
@@ -62,5 +68,25 @@ export type Content = {
     hours: { days: string; time: string }[];
     mapCaption: string;
     rights: string;
+  };
+  booking: {
+    cta: string;
+    title: string;
+    subtitle: string;
+    name: string;
+    namePh: string;
+    phone: string;
+    phonePh: string;
+    date: string;
+    time: string;
+    submit: string;
+    sending: string;
+    successTitle: string;
+    successText: string;
+    error: string;
+    close: string;
+    freeNote: string;
+    datePh: string;
+    timePh: string;
   };
 };

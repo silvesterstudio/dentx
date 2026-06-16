@@ -16,6 +16,15 @@
 
 html {
   scroll-behavior: smooth;
+  /* Hide the scrollbar everywhere while keeping scrolling functional. */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old IE / Edge */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* Chrome / Safari / Edge */
 }
 
 body {
@@ -49,76 +58,563 @@ body {
 }
 
 /*
- * Sticky-stack reveal: the hero is pinned full-screen, and the white + navy
- * sections slide up over it. Below 980px the stack is flattened so the page
- * scrolls as ordinary stacked blocks. Mirrors the mockup's media query.
+ * Cazuri fullscreen-video caption — a TRIGGERED reveal (not scroll-scrubbed),
+ * fired by .ov-caption.play when the expanding video nears fullscreen: the rule
+ * first draws out from the centre to both edges, then the title and tagline rise
+ * up from behind a mask, preload-style. Re-arms when scrolled back out.
+ */
+.ov-rule {
+  height: 1px;
+  width: 100%;
+  background: rgba(251, 251, 251, 0.55);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.6s cubic-bezier(0.7, 0, 0.2, 1);
+}
+.ov-caption.play .ov-rule {
+  transform: scaleX(1);
+}
+.ov-reveal {
+  overflow: hidden;
+  padding-bottom: 0.14em;
+}
+.ov-reveal > span {
+  display: inline-block;
+  transform: translateY(120%);
+  transition: transform 0.65s cubic-bezier(0.7, 0, 0.2, 1);
+}
+.ov-caption.play .ov-reveal > span {
+  transform: translateY(0);
+}
+/* title rises just after the rule finishes, tagline a touch after that */
+.ov-caption.play .ov-title-r > span {
+  transition-delay: 0.34s;
+}
+.ov-caption.play .ov-tag-r > span {
+  transition-delay: 0.46s;
+}
+/* the before/after cards are a SCROLL-SCRUBBED conveyor (transform/opacity set
+   per-frame by the effect, tied to scroll) — no CSS transition here. */
+@media (prefers-reduced-motion: reduce) {
+  .ov-rule {
+    transform: scaleX(1);
+    transition: none;
+  }
+  .ov-reveal > span {
+    transform: none;
+    transition: none;
+  }
+  .ov-ba-card {
+    transition: none;
+  }
+}
+
+/*
+ * Page-load intro reveal. The hero's title lines, image and CTA carry these
+ * base styles (with transitions) at all times; their NATURAL state is the
+ * visible one, so with no JS / reduced motion they simply show. While the
+ * Preloader stages the curtain it sets `html.intro-pre`, which pushes them into
+ * the hidden state. Removing that class (as the curtain lifts) plays them in.
+ */
+.hero-reveal-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.06em;
+}
+.hero-reveal-line > span {
+  display: inline-block;
+  transform: translateY(0);
+  transition: transform 0.95s cubic-bezier(0.7, 0, 0.2, 1);
+}
+.hero-img-reveal {
+  transform: scale(1);
+  opacity: 1;
+  transform-origin: center;
+  transition: transform 1.5s cubic-bezier(0.7, 0, 0.2, 1), opacity 1.2s ease;
+}
+.hero-cta-reveal {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.7s ease, transform 0.8s cubic-bezier(0.7, 0, 0.2, 1);
+  transition-delay: 0.22s;
+}
+/* line 2 of the title trails line 1 slightly */
+.hero-line-2 > span {
+  transition-delay: 0.08s;
+}
+
+/* staged-hidden state, applied only while the curtain is up */
+html.intro-pre .hero-reveal-line > span {
+  transform: translateY(118%);
+}
+html.intro-pre .hero-img-reveal {
+  transform: scale(1.12);
+  opacity: 0;
+}
+html.intro-pre .hero-cta-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-reveal-line > span,
+  .hero-img-reveal,
+  .hero-cta-reveal {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/*
+ * Scroll-reveal. Content opts in with class `reveal` (rise + fade) or
+ * `reveal-img` (a subtle zoom-in for image frames). The hidden state only
+ * applies once JS arms the system (`html.js-reveal`) and before the element
+ * has entered the viewport — RevealOnScroll adds `in-view` via an
+ * IntersectionObserver. With no JS / reduced motion the content just shows.
+ * Stagger within a group via inline `transition-delay`.
+ */
+.reveal,
+.reveal-img {
+  transition: opacity 0.9s ease, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* will-change is added transiently by RevealOnScroll only for the element about
+   to animate, then dropped when the transition ends — so we never keep dozens
+   of permanent GPU layers (a permanent will-change on every reveal is what made
+   scrolling heavy). */
+.reveal.revealing,
+.reveal-img.revealing {
+  will-change: opacity, transform;
+}
+html.js-reveal .reveal {
+  opacity: 0;
+  transform: translateY(34px);
+}
+html.js-reveal .reveal-img {
+  opacity: 0;
+  transform: scale(1.07);
+}
+html.js-reveal .reveal.in-view,
+html.js-reveal .reveal-img.in-view {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-img {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The extra Clinica photos exist only on mobile (placed in the variant-5 grid);
+   hidden everywhere else. */
+.clinic-extra {
+  display: none;
+}
+/* Dedicated mobile Clinica collage — shown only ≤980px (see media query). */
+.clinic-mobile {
+  display: none;
+}
+/* Services video-pin sentinel is mobile-only (it would disturb the 12-col
+   desktop bento otherwise). */
+.svc-video-sentinel {
+  display: none;
+}
+
+/* Scroll-lag fix for the Servicii video. The autoplaying clinic clip repaints
+   ~30×/s; without isolation each repaint dirties the whole bento grid + section,
+   so scrolling past it stutters. Promote the video itself to its own compositor
+   layer (translateZ + backface) and CONTAIN its paint to the tile, so the video
+   composites independently and its frames never invalidate the surrounding
+   layout. Same treatment for the fullscreen overlay clone that morphs out. */
+.qt-video,
+#cazuri-overlay video {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+#quote-tile,
+#cazuri-overlay {
+  contain: paint;
+}
+#cazuri-overlay {
+  /* the morph rewrites top/left/width/height every frame — keeping the overlay
+     promoted means the browser rasterizes it once and just re-composites. */
+  will-change: transform;
+}
+
+/*
+ * Mobile parity: phones run the SAME desktop layout AND scroll animations — the
+ * sticky-stack + cover-blur, the Team horizontal sweep, the Servicii
+ * bento→fullscreen-video expand, and the Cazuri conveyor (their old
+ * max-width:980 JS guards were removed so they run at every width). The ONLY
+ * mobile difference is header chrome: the nav links collapse into a burger menu
+ * and the language toggle + call button move inside it (the top bar is too
+ * narrow for all four).
  */
 @media (max-width: 980px) {
-  #home {
-    position: relative !important;
-    top: 0 !important;
-  }
-  #main,
-  #services,
-  #cases,
-  #reviews {
-    position: relative !important;
-    top: 0 !important;
-    margin: 0 !important;
-  }
-  /* Team: drop the pinned horizontal sweep, stack panels vertically. */
-  #team {
-    position: relative !important;
-    top: 0 !important;
-    height: auto !important;
-  }
-  #team-stage {
-    height: auto !important;
-    overflow: visible !important;
-    padding-top: 0 !important;
-  }
-  #team-viewport {
-    overflow: visible !important;
-  }
-  #team-strip {
-    flex-direction: column !important;
-    transform: none !important;
-    width: auto !important;
-    height: auto !important;
-    gap: 20px !important;
-  }
-  .team-panel {
-    flex-basis: auto !important;
-    width: 100% !important;
-    height: auto !important;
-    padding: 0 !important;
-  }
-  .team-grid {
-    grid-template-columns: 1fr !important;
-    height: auto !important;
-  }
-  .team-photo {
-    aspect-ratio: 4 / 3 !important;
-  }
-  #hero-title {
-    font-size: clamp(38px, 10vw, 62px) !important;
-    max-width: 100% !important;
-  }
+  /* --- header chrome: collapse nav into a burger --- */
   #nav-links {
     display: none !important;
   }
   #nav-burger {
     display: flex !important;
   }
+  .header-desktop-actions {
+    display: none !important;
+  }
+
+  /* === Clinica on mobile: use the dedicated 2-column flex collage; hide the
+     desktop grid (and its now-superseded variant rules below). The two columns
+     flow INDEPENDENTLY, so the right column starts at the middle of the first
+     left photo. === */
   #clinic-grid {
+    display: none !important;
+  }
+  .clinic-mobile {
+    display: block !important;
+  }
+  .cm-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .cm-title {
+    margin: 0;
+    color: #28323f;
+    font-size: clamp(40px, 12vw, 60px);
+    font-weight: 500;
+    line-height: 0.98;
+    letter-spacing: -0.03em;
+  }
+  .cm-since {
+    flex-shrink: 0;
+    color: rgba(40, 50, 63, 0.55);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    padding-top: 10px;
+  }
+  .cm-cols {
+    display: flex;
+    gap: clamp(10px, 3vw, 14px);
+    align-items: flex-start;
+    margin-top: clamp(16px, 4.5vw, 26px);
+  }
+  .cm-col {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 3vw, 16px);
+  }
+  .cm-photo {
+    aspect-ratio: 3 / 4;
+  }
+  /* Experiență is pinned to HALF a photo's height (a 3:4 photo at column width
+     is 4/3 tall, so half = width × 2/3 → aspect-ratio 3/2). This makes the right
+     column's images begin at the MIDDLE of the left photos — the brick offset. */
+  .cm-expertise {
+    aspect-ratio: 3 / 2;
+  }
+
+  /* --- Inner layouts collapse to readable column counts at phone width. The
+     FOUNDATIONS + ANIMATIONS are untouched (sticky-stack, cover-blur, Team
+     horizontal sweep, Servicii bento→fullscreen-video expand, Cazuri conveyor);
+     only how many columns the *content* uses changes, so text stops wrapping one
+     word per line. --- */
+
+  /* Clinica mobile: several SELECTABLE layouts, switched by data-variant on
+     #clinic-grid (?cv=1..4). Shared base flattens the 3 desktop columns so each
+     element can be placed individually; each variant then arranges them. */
+  .clinic-col {
+    display: contents !important;
+  }
+  #clinic-grid {
+    align-items: start !important;
+    row-gap: clamp(14px, 4vw, 22px) !important;
+  }
+  #clinic-grid h2 {
+    margin: 0 !important;
+    font-size: clamp(42px, 12.5vw, 62px) !important;
+    line-height: 0.98 !important;
+  }
+  /* neutralize the desktop inline offsets so each variant controls placement */
+  [data-cl="radiology"],
+  [data-cl="reception"],
+  [data-cl="office"] {
+    margin-top: 0 !important;
+  }
+  [data-cl="expertise"],
+  [data-cl="care"] {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  .clinic-photo {
+    max-height: none !important;
+  }
+
+  /* ===== Variant 1 — clean full-width editorial stack ===== */
+  #clinic-grid[data-variant="1"] {
     grid-template-columns: 1fr !important;
   }
-  #services-grid,
-  #cases-grid,
-  #reviews-grid {
-    grid-template-columns: 1fr !important;
+  #clinic-grid[data-variant="1"] h2 { order: 1; }
+  #clinic-grid[data-variant="1"] [data-cl="since"] { order: 2; text-align: left !important; margin: 4px 0 8px !important; }
+  #clinic-grid[data-variant="1"] [data-cl="reception"] { order: 3; }
+  #clinic-grid[data-variant="1"] [data-cl="expertise"] { order: 4; }
+  #clinic-grid[data-variant="1"] [data-cl="radiology"] { order: 5; }
+  #clinic-grid[data-variant="1"] [data-cl="office"] { order: 6; }
+  #clinic-grid[data-variant="1"] [data-cl="care"] { order: 7; }
+
+  /* ===== Variant 2 — full-width feature + 2-col pair ===== */
+  #clinic-grid[data-variant="2"] {
+    grid-template-columns: 1fr 1fr !important;
+    column-gap: clamp(10px, 3vw, 14px) !important;
   }
-  #contact-grid {
+  #clinic-grid[data-variant="2"] h2 { order: 1; grid-column: 1 / -1 !important; }
+  #clinic-grid[data-variant="2"] [data-cl="since"] { order: 2; grid-column: 1 / -1 !important; text-align: right !important; margin: 4px 0 4px !important; }
+  #clinic-grid[data-variant="2"] [data-cl="reception"] { order: 3; grid-column: 1 / -1 !important; }
+  #clinic-grid[data-variant="2"] [data-cl="expertise"] { order: 4; grid-column: 1 / -1 !important; margin-top: 4px !important; }
+  #clinic-grid[data-variant="2"] [data-cl="radiology"] { order: 5; grid-column: 1 / 2 !important; }
+  #clinic-grid[data-variant="2"] [data-cl="office"] { order: 6; grid-column: 2 / 3 !important; }
+  #clinic-grid[data-variant="2"] [data-cl="care"] { order: 7; grid-column: 1 / -1 !important; }
+
+  /* ===== Variant 3 — abstract: varied widths, alternating alignment ===== */
+  #clinic-grid[data-variant="3"] {
     grid-template-columns: 1fr !important;
+    row-gap: clamp(10px, 3vw, 16px) !important;
+  }
+  #clinic-grid[data-variant="3"] h2 { order: 1; }
+  #clinic-grid[data-variant="3"] [data-cl="since"] { order: 2; justify-self: end !important; text-align: right !important; margin: 4px 0 10px !important; }
+  #clinic-grid[data-variant="3"] [data-cl="reception"] { order: 3; width: 86% !important; justify-self: start !important; }
+  #clinic-grid[data-variant="3"] [data-cl="expertise"] { order: 4; width: 80% !important; justify-self: end !important; margin-top: 8px !important; }
+  #clinic-grid[data-variant="3"] [data-cl="radiology"] { order: 5; width: 64% !important; justify-self: end !important; margin-top: 12px !important; }
+  #clinic-grid[data-variant="3"] [data-cl="office"] { order: 6; width: 56% !important; justify-self: start !important; margin-top: 12px !important; }
+  #clinic-grid[data-variant="3"] [data-cl="care"] { order: 7; width: 80% !important; justify-self: start !important; margin-top: 8px !important; }
+
+  /* ===== Variant 4 — staggered 2-col: tall left feature, stepped right ===== */
+  #clinic-grid[data-variant="4"] {
+    grid-template-columns: 1.05fr 0.95fr !important;
+    column-gap: clamp(10px, 3vw, 14px) !important;
+    row-gap: 0 !important;
+  }
+  #clinic-grid[data-variant="4"] h2 { grid-column: 1 / 2 !important; grid-row: 1 !important; align-self: start !important; font-size: clamp(38px, 11vw, 54px) !important; }
+  #clinic-grid[data-variant="4"] [data-cl="since"] { grid-column: 2 / 3 !important; grid-row: 1 !important; align-self: start !important; text-align: right !important; margin-top: 8px !important; }
+  #clinic-grid[data-variant="4"] [data-cl="reception"] { grid-column: 1 / 2 !important; grid-row: 2 / 4 !important; align-self: start !important; margin-top: clamp(14px, 4vw, 22px) !important; }
+  #clinic-grid[data-variant="4"] [data-cl="radiology"] { grid-column: 2 / 3 !important; grid-row: 2 / 3 !important; align-self: start !important; margin-top: clamp(40px, 13vw, 78px) !important; }
+  #clinic-grid[data-variant="4"] [data-cl="office"] { grid-column: 2 / 3 !important; grid-row: 3 / 4 !important; align-self: start !important; margin-top: clamp(12px, 3.5vw, 18px) !important; }
+  #clinic-grid[data-variant="4"] [data-cl="expertise"] { grid-column: 1 / 2 !important; grid-row: 4 / 5 !important; align-self: start !important; margin-top: clamp(12px, 3.5vw, 18px) !important; }
+  #clinic-grid[data-variant="4"] [data-cl="care"] { grid-column: 2 / 3 !important; grid-row: 4 / 5 !important; align-self: start !important; margin-top: clamp(12px, 3.5vw, 18px) !important; }
+
+  /* ===== Variant 5 — all photos 3:4. reception + office stacked & aligned on
+     the left; radiology on the right, vertically CENTERED against the two left
+     photos (its middle lines up with the seam between them); text below. */
+  #clinic-grid[data-variant="5"] {
+    grid-template-columns: 1fr 1fr !important;
+    column-gap: clamp(10px, 3vw, 14px) !important;
+    row-gap: clamp(12px, 3.5vw, 18px) !important;
+  }
+  #clinic-grid[data-variant="5"] h2 {
+    grid-column: 1 / 2 !important;
+    grid-row: 1 !important;
+    align-self: start !important;
+    font-size: clamp(34px, 10vw, 50px) !important;
+  }
+  #clinic-grid[data-variant="5"] [data-cl="since"] {
+    grid-column: 2 / 3 !important;
+    grid-row: 1 !important;
+    align-self: start !important;
+    text-align: right !important;
+    margin-top: 6px !important;
+  }
+  /* Photo STACK on the left (reception, office, then the 2 extras UNDER them);
+     radiology stays CENTERED on the right against the middle of that stack
+     (unchanged grid). Experiență beside reception (top-right); Grijă beside the
+     last card (bottom-right). All photos 3:4. */
+  #clinic-grid[data-variant="5"] [data-cl="reception"] {
+    grid-column: 1 / 2 !important;
+    grid-row: 2 !important;
+    align-self: start !important;
+    aspect-ratio: 3 / 4 !important;
+  }
+  #clinic-grid[data-variant="5"] [data-cl="office"] {
+    grid-column: 1 / 2 !important;
+    grid-row: 3 !important;
+    align-self: start !important;
+    aspect-ratio: 3 / 4 !important;
+  }
+  #clinic-grid[data-variant="5"] [data-cl="extra1"] {
+    display: block !important;
+    grid-column: 1 / 2 !important;
+    grid-row: 4 !important;
+    align-self: start !important;
+    aspect-ratio: 3 / 4 !important;
+  }
+  #clinic-grid[data-variant="5"] [data-cl="extra2"] {
+    display: block !important;
+    grid-column: 1 / 2 !important;
+    grid-row: 5 !important;
+    align-self: start !important;
+    aspect-ratio: 3 / 4 !important;
+  }
+  /* Experiență text — top-right, beside reception */
+  #clinic-grid[data-variant="5"] [data-cl="expertise"] {
+    grid-column: 2 / 3 !important;
+    grid-row: 2 !important;
+    align-self: start !important;
+  }
+  /* radiology — right, top-aligned beside office (right under Experiență) */
+  #clinic-grid[data-variant="5"] [data-cl="radiology"] {
+    grid-column: 2 / 3 !important;
+    grid-row: 3 !important;
+    align-self: start !important;
+    aspect-ratio: 3 / 4 !important;
+  }
+  /* Grijă text — right, beside Foto 4 */
+  #clinic-grid[data-variant="5"] [data-cl="care"] {
+    grid-column: 2 / 3 !important;
+    grid-row: 4 !important;
+    align-self: start !important;
+  }
+
+  /* Team sweep: MERGE the photo and the info card into ONE card — the photo
+     fills the whole panel and the name/role/bio sit OVER it (gradient + white
+     text at the bottom), instead of a photo with a separate card beneath. */
+  .team-grid {
+    position: relative !important;
+    display: block !important;
+    height: 100% !important;
+    gap: 0 !important;
+  }
+  .team-photo {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: auto !important;
+    min-height: 0 !important;
+    border-radius: 18px !important;
+  }
+  .team-info {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    background: linear-gradient(
+      to top,
+      rgba(8, 11, 16, 0.92) 0%,
+      rgba(8, 11, 16, 0.55) 45%,
+      rgba(8, 11, 16, 0) 100%
+    ) !important;
+    border-radius: 0 0 18px 18px !important;
+    padding: clamp(52px, 16vw, 84px) clamp(18px, 5vw, 26px)
+      clamp(20px, 5.5vw, 28px) !important;
+  }
+  /* all overlaid text turns white over the photo */
+  .team-info * {
+    color: #fbfbfb !important;
+  }
+  .team-info span {
+    color: rgba(251, 251, 251, 0.7) !important;
+  }
+  .team-info p {
+    color: rgba(251, 251, 251, 0.85) !important;
+  }
+
+  /* Servicii on mobile: a SCROLLABLE bento of SQUARE cards. The video tile is
+     the last card and is STICKY — when it pins to the top it expands to
+     fullscreen (driven by CaseStudies via #svc-video-sentinel), then the Cazuri
+     conveyor plays. So the bento can be longer than one screen AND the desktop
+     video-expand is preserved (the grid's padding-bottom is the pin/expand room). */
+  #services {
+    height: auto !important;
+  }
+  #services-stage {
+    position: static !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  #services-grid {
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: auto !important;
+    grid-auto-rows: auto !important;
+    /* normal row flow (no dense) so the sentinel stays right before the video */
+    grid-auto-flow: row !important;
+    gap: clamp(8px, 2.5vw, 12px) !important;
+    padding-bottom: 90svh !important;
+  }
+  #services-grid > h2 {
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+    align-self: start !important;
+    margin: 0 0 clamp(4px, 1.5vw, 8px) !important;
+    font-size: clamp(40px, 11vw, 60px) !important;
+  }
+  /* every service card is square */
+  #services-grid .svc-card {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    aspect-ratio: 1 / 1 !important;
+    min-width: 0 !important;
+  }
+  #services-grid .svc-desc {
+    display: none !important;
+  }
+  /* sentinel: 0-height full-width row marking the video's pin point */
+  .svc-video-sentinel {
+    display: block !important;
+    grid-column: 1 / -1 !important;
+    height: 0 !important;
+    margin: 0 !important;
+  }
+  /* video tile — last card, full-width. It scrolls in naturally; the expand
+     begins once it's FULLY IN VIEW AT THE BOTTOM and grows upward to fullscreen
+     FROM THAT POSITION (handled in CaseStudies via #svc-video-sentinel, which
+     takes over with the fixed overlay). The growing overlay is anchored at the
+     bottom and the dark backdrop ramps in fast, so the cards scrolling behind
+     read as a frozen stage. */
+  #quote-tile {
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+    aspect-ratio: 16 / 9 !important;
+    min-height: 0 !important;
+  }
+
+  /* Cazuri conveyor: stack the title / testimonial / before-after card
+     vertically instead of the desktop's left-quote + right-card columns, so the
+     testimonial doesn't wrap one word per line and nothing overlaps. The card's
+     rise/exit animation (JS transform) is untouched. */
+  .ov-caption {
+    left: clamp(20px, 5vw, 40px) !important;
+    right: clamp(20px, 5vw, 40px) !important;
+    top: clamp(64px, 10vh, 120px) !important;
+  }
+  .ov-quote-block {
+    left: clamp(20px, 5vw, 40px) !important;
+    right: clamp(20px, 5vw, 40px) !important;
+    width: auto !important;
+    top: clamp(120px, 18vh, 190px) !important;
+  }
+  .ov-quote-block blockquote {
+    font-size: clamp(15px, 4.2vw, 20px) !important;
+  }
+  /* before/after card: keep the 2-row stack (before OVER after), but SHRUNK so
+     it sits in the bottom strip and clears the testimonial text above it even
+     for the longest quote / shortest phone. Narrower width + shorter (16:9)
+     image rows keep the whole stack compact. */
+  .ov-ba-card {
+    left: 50% !important;
+    right: auto !important;
+    width: min(58vw, 240px) !important;
+    margin-left: calc(min(58vw, 240px) / -2) !important;
+    top: auto !important;
+    bottom: clamp(16px, 4vh, 28px) !important;
+  }
+  .ov-ba-card .ba-imgwrap {
+    aspect-ratio: 16 / 9 !important;
   }
 }

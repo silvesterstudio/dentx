@@ -1,9 +1,7 @@
 "use client";
 
-import { CLINIC_TEL } from "@/lib/constants";
 import { useContent } from "./LanguageProvider";
-
-const CALL_HREF = `tel:${CLINIC_TEL}`;
+import BookingForm from "./BookingForm";
 
 export default function Hero() {
   const t = useContent();
@@ -23,26 +21,38 @@ export default function Hero() {
       }}
     >
       {/* full-bleed image */}
-      <div id="hero-img-box" style={{ position: "absolute", inset: 0 }}>
-        <img
-          src="/hero.webp"
-          alt="Dent X"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            objectPosition: "60% center",
-            display: "block",
-          }}
-        />
+      <div
+        id="hero-img-box"
+        className="hero-img-reveal"
+        style={{ position: "absolute", inset: 0 }}
+      >
+        <picture>
+          {/* dedicated mobile hero photo (≤980px) */}
+          <source media="(max-width: 980px)" srcSet="/hero-mobile.webp" />
+          <img
+            src="/hero.webp"
+            alt="Dent X"
+            decoding="async"
+            fetchPriority="high"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "60% center",
+              display: "block",
+            }}
+          />
+        </picture>
       </div>
       <div
         style={{
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
+          // strong bottom gradient for the centred bottom text (faces stay
+          // clear), plus a light top wash so the nav reads over the wall
           background:
-            "linear-gradient(96deg, rgba(12,16,22,0.86) 0%, rgba(12,16,22,0.5) 30%, rgba(12,16,22,0.08) 56%, rgba(12,16,22,0) 78%), linear-gradient(0deg, rgba(12,16,22,0.6) 0%, rgba(12,16,22,0) 42%)",
+            "linear-gradient(0deg, rgba(12,16,22,0.9) 0%, rgba(12,16,22,0.62) 18%, rgba(12,16,22,0.18) 40%, rgba(12,16,22,0) 60%), linear-gradient(180deg, rgba(12,16,22,0.5) 0%, rgba(12,16,22,0) 20%)",
         }}
       />
 
@@ -53,76 +63,62 @@ export default function Hero() {
           inset: 0,
           display: "flex",
           flexDirection: "column",
+          alignItems: "center",
           padding:
-            "clamp(20px, 2.6vh, 36px) clamp(22px, 3.2vw, 60px) clamp(28px, 4vh, 56px)",
+            "clamp(20px, 2.6vh, 36px) clamp(22px, 3.2vw, 60px) clamp(36px, 5vh, 64px)",
           boxSizing: "border-box",
         }}
       >
         <div style={{ flex: 1 }} />
 
-        {/* Headline block, bottom-left */}
-        <div style={{ maxWidth: 760, pointerEvents: "none" }}>
+        {/* Headline block, centred at the bottom */}
+        <div style={{ maxWidth: 920, textAlign: "center", pointerEvents: "none" }}>
           <h1
             id="hero-title"
             style={{
               margin: 0,
               color: "#fbfbfb",
-              fontSize: "clamp(40px, 6vw, 100px)",
+              fontSize: "clamp(36px, 5vw, 84px)",
               fontWeight: 800,
-              lineHeight: 0.95,
+              lineHeight: 0.98,
               letterSpacing: "-0.035em",
-              textShadow: "0 4px 40px rgba(8,11,16,0.4)",
+              textShadow: "0 4px 40px rgba(8,11,16,0.45)",
             }}
           >
-            {t.hero.titleL1}
-            <br />
-            {t.hero.titleL2}
+            <span className="hero-reveal-line">
+              <span>
+                {(() => {
+                  // only the FIRST word ("Zâmbetul") is the classy italic serif;
+                  // the rest of the headline stays the bold sans.
+                  const [first, ...rest] = t.hero.titleL1.split(" ");
+                  return (
+                    <>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-display), Georgia, serif",
+                          fontStyle: "italic",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                        }}
+                      >
+                        {first}
+                      </span>
+                      {rest.length ? ` ${rest.join(" ")}` : ""}
+                    </>
+                  );
+                })()}
+              </span>
+            </span>
+            <span className="hero-reveal-line hero-line-2">
+              <span>{t.hero.titleL2}</span>
+            </span>
           </h1>
-          <p
-            style={{
-              color: "rgba(255,255,255,0.86)",
-              fontSize: "clamp(15px, 1.15vw, 18px)",
-              lineHeight: 1.6,
-              margin: "clamp(18px, 2vw, 26px) 0 0",
-              maxWidth: "48ch",
-              textShadow: "0 1px 16px rgba(8,11,16,0.4)",
-              textWrap: "pretty",
-            }}
-          >
-            {t.hero.sub}
-          </p>
-          <a
-            href={CALL_HREF}
-            style={{
-              pointerEvents: "auto",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 12,
-              marginTop: "clamp(22px, 2.6vw, 36px)",
-              background: "#fbfbfb",
-              color: "#14191f",
-              borderRadius: 999,
-              padding: "16px 30px",
-              fontSize: 15,
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            {t.common.book}
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#14191f"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12h14" />
-              <path d="m12 5 7 7-7 7" />
-            </svg>
-          </a>
+          <div className="hero-cta-reveal">
+            <BookingForm
+              ctaLabel={t.common.book}
+              buttonStyle={{ pointerEvents: "auto", marginTop: "clamp(22px, 2.6vw, 36px)" }}
+            />
+          </div>
         </div>
       </div>
     </section>

@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { CLINIC_TEL } from "@/lib/constants";
 import { useContent } from "./LanguageProvider";
-import ImageSlot from "./ImageSlot";
 
-const CALL_HREF = `tel:${CLINIC_TEL}`;
+const PHOTOS = [
+  "/Ț. Dorel.webp",
+  "/G. Aleandru.webp",
+  "/C. Natalia.webp",
+  "/P. Irina.webp",
+  "/B.Galina.webp",
+  "/Ț. Lidia.webp",
+];
 
 // Vertical scroll (svh) spent per member transition while the team is pinned.
 const DWELL_VH = 70;
@@ -19,18 +24,12 @@ const HEADING = {
   letterSpacing: "-0.03em",
 } as const;
 
-const EYEBROW = {
-  color: "rgba(40,50,63,0.6)",
-  fontSize: 13,
-  fontWeight: 500,
-} as const;
-
 /**
- * Team — its own pinned layer so Servicii slides over it like every other
- * section, while still doing the reference's horizontal sweep. The section is
- * sticky (top:0) and taller than the viewport; a zero-height #team-sentinel
- * rendered just before it in the flow gives a sticky-proof read of how far
- * we've scrolled into the pin, which drives the strip's horizontal translate.
+ * Team — a normal-flow section (taller than the viewport) whose INNER stage is
+ * sticky (top:0), so it pins for the horizontal sweep and then scrolls up and
+ * out with the page; Servicii simply follows it (default scroll, no slide-over).
+ * A zero-height #team-sentinel rendered just before it gives a sticky-proof read
+ * of how far we've scrolled into the pin, which drives the strip's translate.
  * Same white as Clinica noastră with no edge between them, so the two read as
  * one continuous block. Below 980px globals.css stacks the panels.
  */
@@ -43,7 +42,6 @@ export default function Team() {
   const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 980px)");
     let raf = 0;
     const update = () => {
       raf = 0;
@@ -51,7 +49,7 @@ export default function Team() {
       const bar = barRef.current;
       const sentinel = document.getElementById("team-sentinel");
       if (!strip) return;
-      if (mq.matches || !sentinel) {
+      if (!sentinel) {
         strip.style.transform = "";
         if (bar) bar.style.transform = "";
         return;
@@ -82,8 +80,10 @@ export default function Team() {
       id="team"
       data-screen-label="Team"
       style={{
-        position: "sticky",
-        top: 0,
+        // Normal flow (not a sticky overlay layer): the team scrolls up and out
+        // and Servicii follows it like a default scroll — Servicii no longer
+        // slides OVER the team. Only the inner stage pins (for the sweep).
+        position: "relative",
         zIndex: 3,
         height: `calc(100svh + ${(total - 1) * DWELL_VH}svh)`,
         background: "#fbfbfb",
@@ -92,6 +92,8 @@ export default function Team() {
       <div
         id="team-stage"
         style={{
+          position: "sticky",
+          top: 0,
           height: "100svh",
           boxSizing: "border-box",
           display: "flex",
@@ -104,9 +106,9 @@ export default function Team() {
         {/* header */}
         <div style={{ padding: "0 clamp(20px, 2.4vw, 44px)", flexShrink: 0 }}>
           <div style={{ maxWidth: 1760, margin: "0 auto", width: "100%" }}>
-            <div style={EYEBROW}>{t.team.eyebrow}</div>
-            <h2 style={HEADING}>{t.team.title}</h2>
+            <h2 className="reveal" style={HEADING}>{t.team.title}</h2>
             <div
+              className="team-progress"
               style={{
                 marginTop: "clamp(12px, 1.4vw, 20px)",
                 height: 3,
@@ -178,7 +180,19 @@ export default function Team() {
                       background: "#e9e9e9",
                     }}
                   >
-                    <ImageSlot caption={`${t.team.photoPrefix} ${m.name}`} shape="rect" />
+                    <img
+                      src={PHOTOS[i]}
+                      alt={m.name}
+                      decoding="async"
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        objectPosition: "center top",
+                      }}
+                    />
                   </div>
 
                   {/* info card */}
@@ -223,23 +237,6 @@ export default function Team() {
                     >
                       {m.bio}
                     </p>
-                    <a
-                      href={CALL_HREF}
-                      style={{
-                        display: "block",
-                        background: "#28323f",
-                        color: "#fbfbfb",
-                        borderRadius: 12,
-                        padding: 16,
-                        fontSize: 14,
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        textAlign: "center",
-                        marginTop: 28,
-                      }}
-                    >
-                      {t.common.book}
-                    </a>
                   </div>
                 </div>
               </div>

@@ -3,37 +3,30 @@
 import { useContent } from "./LanguageProvider";
 import ImageSlot from "./ImageSlot";
 
-export default function Reviews({ top }: { top: string }) {
+export default function Reviews() {
   const t = useContent();
 
   return (
     <section
       id="reviews"
-      data-screen-label="Reviews"
+      data-screen-label="Recenzii"
       style={{
-        position: "sticky",
-        top,
-        zIndex: 6,
-        background: "#28323f",
-        borderRadius: "28px 28px 0 0",
-        minHeight: "100svh",
+        // opaque + above the fixed Cazuri video (z6) so it slides up OVER the
+        // fullscreen video as you scroll past, then the overlay hides.
+        position: "relative",
+        zIndex: 7,
+        background: "#fbfbfb",
         boxSizing: "border-box",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        padding:
-          "clamp(28px, 4vw, 64px) clamp(20px, 2.4vw, 44px) clamp(40px, 5vw, 80px)",
+        padding: "clamp(56px, 7vw, 96px) clamp(20px, 2.4vw, 44px)",
       }}
     >
       <div style={{ maxWidth: 1760, margin: "0 auto", width: "100%" }}>
         <div>
-          <div style={{ color: "rgba(251,251,251,0.55)", fontSize: 13, fontWeight: 500 }}>
-            {t.reviews.eyebrow}
-          </div>
           <h2
+            className="reveal"
             style={{
               margin: "10px 0 0",
-              color: "#fbfbfb",
+              color: "#28323f",
               fontSize: "clamp(40px, 4.6vw, 84px)",
               fontWeight: 500,
               lineHeight: 0.98,
@@ -53,15 +46,17 @@ export default function Reviews({ top }: { top: string }) {
             marginTop: "clamp(24px, 3vw, 44px)",
           }}
         >
-          {t.reviews.items.map((r) => (
+          {t.reviews.items.map((r, i) => (
             <article
               key={r.name}
+              className="reveal"
               style={{
                 position: "relative",
                 borderRadius: 20,
                 overflow: "hidden",
                 aspectRatio: "3 / 4",
                 background: "#1d242d",
+                transitionDelay: `${0.05 + i * 0.08}s`,
               }}
             >
               <ImageSlot caption={`${t.reviews.videoLabel} — ${r.name}`} shape="rect" dark />
