@@ -405,12 +405,18 @@ export default function CaseStudies() {
                   aria-hidden
                   style={{
                     position: "absolute",
-                    left: "-30%",
-                    right: "-30%",
-                    top: "-44px",
-                    bottom: "-48px",
+                    left: "-28%",
+                    right: "-28%",
+                    top: "-50px",
+                    bottom: "-54px",
+                    // Strong, WIDE dark backing — stays ~0.85 across the whole
+                    // text and only melts away at the outer edges, so the white
+                    // testimonial pops the same way the title does. (My earlier
+                    // pool faded to ~0.3 right where the text sat, which is why it
+                    // read gray.) Plain gradient — no backdrop-blur — keeps the
+                    // scroll-scrubbed conveyor cheap; fades with the block opacity.
                     background:
-                      "radial-gradient(74% 72% at 50% 46%, rgba(8,11,16,0.8) 0%, rgba(8,11,16,0.66) 44%, rgba(8,11,16,0.3) 72%, rgba(8,11,16,0) 100%)",
+                      "radial-gradient(128% 112% at 50% 45%, rgba(8,11,16,0.9) 0%, rgba(8,11,16,0.86) 58%, rgba(8,11,16,0.64) 80%, rgba(8,11,16,0.24) 93%, rgba(8,11,16,0) 100%)",
                     pointerEvents: "none",
                   }}
                 />
