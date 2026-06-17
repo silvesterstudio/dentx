@@ -32,6 +32,10 @@ export default function DenttyHome() {
 
   useEffect(() => {
     const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+    // Cover-blur is a desktop-only flourish — a full-viewport blur() filter is
+    // too expensive to animate per scroll frame on phones (it made mobile
+    // scrolling janky). Below 980px we skip it entirely, as documented.
+    const mq = window.matchMedia("(max-width: 980px)");
     const homeEl = document.getElementById("home");
     const mainEl = document.getElementById("main");
     // [outgoing section that gets blurred, covering section we measure].
@@ -47,7 +51,7 @@ export default function DenttyHome() {
       for (const [target, coverer] of pairs) {
         if (!target) continue;
         let f = "";
-        if (coverer) {
+        if (coverer && !mq.matches) {
           const cov = clamp01((vh - coverer.getBoundingClientRect().top) / vh);
           const p = Math.min(cov, FINAL_PROGRESS);
           if (p > 0.001) f = `blur(${(p * MAX_BLUR).toFixed(2)}px)`;

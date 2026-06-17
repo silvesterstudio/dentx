@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useContent } from "./LanguageProvider";
 import ImageSlot from "./ImageSlot";
+import AutoplayVideo from "./AutoplayVideo";
 
 // The fullscreen video IS the "Lucrările noastre" section. After it expands and
 // the title animates, the 3 before/after cases play as a conveyor: each card
@@ -11,7 +12,9 @@ import ImageSlot from "./ImageSlot";
 // testimonial reveals word-by-word (by scroll) on the left; scroll on and the
 // card slides out to the left as the NEXT case springs in. #cases is an empty
 // tall track that supplies the scroll room. Desktop only; mobile stacks them.
-const TRACK_VH = 600;
+// Sized so ALL cases get their dwell: each case needs ~(MOVE+HOLD) vh of scroll
+// and `past` ≈ (1 + TRACK_VH/100) vh, so 7 cases (~10.7vh) need ~1150svh + lift room.
+const TRACK_VH = 1200;
 const TITLE_HOLD = 0.5; // vh before case 1 starts rising in (after the title)
 const MOVE = 0.5; // vh — card rises UP from the bottom into place
 const HOLD = 0.95; // vh — card STOPPED at centre while its testimonial reveals
@@ -34,8 +37,8 @@ export default function CaseStudies() {
   }, []);
 
   useEffect(() => {
-    // Mobile uses a scrollable Services bento + a stacked Cazuri (#cazuri-mobile),
-    // so the desktop pinned video→fullscreen expand is disabled below 980px.
+    // The expand→conveyor overlay runs on BOTH desktop and mobile (mobile measures
+    // the video tile's own rect; desktop measures the pinned #services region).
     const mq = window.matchMedia("(max-width: 980px)");
     const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
     const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
@@ -62,7 +65,15 @@ export default function CaseStudies() {
       author: block.querySelector<HTMLElement>(".oq-author"),
     }));
 
+    // Once the overlay is reset (Servicii not active) there's nothing to update
+    // until it activates again — but `update` still fires every scroll frame
+    // while scrolling Echipa/Clinica/etc. This flag makes reset() write the DOM
+    // only ONCE on the active→inactive transition instead of on every one of
+    // those frames (a meaningful saving on mobile, where Echipa scrolled janky).
+    let settledInactive = false;
     const reset = (tile: HTMLElement) => {
+      if (settledInactive) return;
+      settledInactive = true;
       overlay.style.display = "none";
       tile.style.visibility = "";
       if (backdropRef.current) backdropRef.current.style.opacity = "0";
@@ -87,25 +98,14 @@ export default function CaseStudies() {
       const qr = tile.getBoundingClientRect();
 
       // scroll0 = how far we've scrolled INTO the expand; expandDist = its length.
-      // Desktop: the Servicii inner stage is PINNED, so we measure from the
-      // section top over the pinned region. Mobile: the square-card bento SCROLLS
-      // and the video tile is sticky — we measure from a sentinel right before it
-      // (the expand begins once the video pins to the top), so the bento can be
-      // longer than one screen.
+      // DESKTOP: the Servicii inner stage is PINNED, so we measure from the section
+      // top over the pinned region. MOBILE: the square-card bento SCROLLS, so we
+      // measure the video tile's OWN rect (expand begins once it's fully in view).
       let scroll0: number;
       let expandDist: number;
       let wantActive: boolean;
       if (mq.matches) {
-        const sentinel = document.getElementById("svc-video-sentinel");
-        if (!sentinel) {
-          reset(tile);
-          return;
-        }
-        // The video tile sits at the BOTTOM of the bento. The expand begins once
-        // it's FULLY in view at the bottom (its top reaches vh - height) and grows
-        // upward to fullscreen FROM THAT POSITION; the dark backdrop ramps in fast
-        // so the cards scrolling behind read as a frozen stage.
-        const off = vh - qr.height - sentinel.getBoundingClientRect().top;
+        const off = vh - qr.height - qr.top;
         scroll0 = Math.max(0, off);
         expandDist = Math.max(1, 0.9 * vh); // expand over ~one screen of scroll
         wantActive = off > 0;
@@ -119,56 +119,69 @@ export default function CaseStudies() {
         reset(tile);
         return;
       }
+      // active again — re-arm reset() so it fires once when we next go inactive
+      settledInactive = false;
       const p = clamp01(scroll0 / expandDist);
 
-      // Mobile: fade in the dark backdrop as the video grows so the white grid
-      // padding BELOW the pinned, expanding video reads as a cinematic dark
-      // stage. Ramps in fast (full by p≈0.25) so the moment the expand starts
-      // the page looks frozen. Off once fullscreen.
+      // MOBILE: fade in the dark backdrop as the video grows so the white grid
+      // padding below the expanding video reads as a cinematic dark stage.
       if (backdropRef.current) {
         const bo = mq.matches && p < 0.999 ? clamp01(p * 4) : 0;
         backdropRef.current.style.opacity = bo.toFixed(3);
       }
 
-      // Lift: at the very end, the fullscreen card slides UP to reveal Contact.
+      // End-of-Cazuri → Contact hand-off (BOTH widths reveal Contact, which sits
+      // BENEATH the overlay at z5 < z6): desktop lifts via `top` + a peel-up
+      // flourish; mobile lifts via a cheap GPU `translateY`. See the branch below.
       const contact = document.getElementById("contact");
       const contactTop = contact ? contact.getBoundingClientRect().top : vh;
-      const lift = Math.min(0, contactTop - vh);
+      const lift = Math.min(0, contactTop - vh); // 0 → -vh as Contact rises in
       const liftP = clamp01((vh - contactTop) / vh);
 
-      // expand from the tile rect → fullscreen by p, then hold + lift. On mobile
-      // the source is the video's FULLY-IN-VIEW-AT-BOTTOM position (top = vh -
-      // height), so it grows upward from there (anchored at the bottom) while the
-      // bento scrolls away behind the fast-fading backdrop. Desktop grows from the
-      // tile's pinned position in the bento.
+      // expand from the tile rect → fullscreen by p (mobile anchors at the bottom).
       const srcTop = mq.matches ? vh - qr.height : qr.top;
       tile.style.visibility = "hidden";
       overlay.style.display = "block";
-      overlay.style.top = lerp(srcTop, 0, p) + lift + "px";
       overlay.style.left = lerp(qr.left, 0, p) + "px";
       overlay.style.width = lerp(qr.width, vw, p) + "px";
       overlay.style.height = lerp(qr.height, vh, p) + "px";
       // all corners share the expand radius (rounded tile → square fullscreen)…
       const er = lerp(18, 0, p);
       overlay.style.borderRadius = er + "px";
-      // …and the BOTTOM corners round FURTHER during the final lift, so the card
-      // peels up off the dark Contacte (er keeps them in sync during the expand,
-      // otherwise they'd be forced square while the top corners stay rounded).
-      // corners + shrink share the SAME normalised lift progress (reaches full
-      // a little before liftP maxes out — same feel as the corner rounding).
-      const lp = Math.min(1, liftP * 2.5);
-      const r = Math.max(er, 44 * lp).toFixed(1) + "px";
-      overlay.style.borderBottomLeftRadius = r;
-      overlay.style.borderBottomRightRadius = r;
-      overlay.style.boxShadow =
-        liftP > 0.01 ? `inset 0 0 0 1.5px rgba(255,255,255,${(0.4 * lp).toFixed(2)})` : "";
-      // shrink the card 100% → 95% as it lifts, so it pulls in to a floating
-      // card while revealing the slate Contacte around/beneath it.
-      overlay.style.transform = `scale(${(1 - 0.05 * lp).toFixed(4)})`;
-      // fade the card to invisible once Contact is fully in view
-      overlay.style.opacity = liftP > 0.5
-        ? Math.max(0, 1 - (liftP - 0.5) * 2).toFixed(3)
-        : "";
+
+      if (mq.matches) {
+        // MOBILE: reveal Contact by sliding the fullscreen video UP with a cheap
+        // GPU transform (translateY — no repaint, no lag). Contact sits BENEATH it
+        // (its own z-index) and is uncovered as the video clears the screen, its
+        // bottom edge tracking Contact's top edge for a seamless hand-off. We do
+        // this instead of the old "Contact slides OVER via z-index" trick, which
+        // relied on a portaled fixed overlay's stacking order and silently failed
+        // on real mobile browsers — leaving Contact hidden ("page ends at Cazuri").
+        overlay.style.top = lerp(srcTop, 0, p) + "px";
+        // EXACT tracking: the video's bottom edge sits right on Contact's top edge
+        // (no multiplier) so there's no empty slate band between them. Contact is
+        // ≥100vh tall (globals.css) so contactTop reaches 0 and the video clears
+        // the screen fully at the bottom.
+        overlay.style.transform = `translateY(${Math.max(-vh, lift).toFixed(1)}px)`;
+        overlay.style.boxShadow = "";
+        overlay.style.borderBottomLeftRadius = "";
+        overlay.style.borderBottomRightRadius = "";
+        overlay.style.opacity = "";
+      } else {
+        // DESKTOP: lift via top + the "peel up" shrink/round/shadow/fade flourish
+        // (corners + shrink share the same normalised lift progress).
+        overlay.style.top = lerp(srcTop, 0, p) + lift + "px";
+        const lp = Math.min(1, liftP * 2.5);
+        const r = Math.max(er, 44 * lp).toFixed(1) + "px";
+        overlay.style.borderBottomLeftRadius = r;
+        overlay.style.borderBottomRightRadius = r;
+        overlay.style.boxShadow =
+          liftP > 0.01 ? `inset 0 0 0 1.5px rgba(255,255,255,${(0.4 * lp).toFixed(2)})` : "";
+        overlay.style.transform = `scale(${(1 - 0.05 * lp).toFixed(4)})`;
+        overlay.style.opacity = liftP > 0.5
+          ? Math.max(0, 1 - (liftP - 0.5) * 2).toFixed(3)
+          : "";
+      }
 
       // fade the case content out as the card lifts, so the rising video is clean.
       const sf = 1 - liftP;
@@ -242,15 +255,16 @@ export default function CaseStudies() {
 
   return (
     <>
-      {/* empty tall track — scroll room. Mobile shows a stacked section instead. */}
+      {/* Empty tall track — it supplies the scroll room for the fixed
+          expand→conveyor overlay (desktop AND mobile both use the overlay). */}
       <section
         id="cases"
         data-screen-label="Cazuri"
         style={{ position: "relative", background: "#fbfbfb", height: `${TRACK_VH}svh` }}
       >
+        {/* Legacy stacked fallback — NOT shown (the overlay drives Cazuri on every
+            width). Kept for reference; preload="none" so its video never loads. */}
         <div id="cazuri-mobile" style={{ display: "none" }}>
-          {/* Cinematic video moment — the mobile stand-in for the desktop
-              expand-to-fullscreen video, with the title set over it. */}
           <div
             style={{
               position: "relative",
@@ -261,10 +275,10 @@ export default function CaseStudies() {
             }}
           >
             <video
-              autoPlay
               muted
               loop
               playsInline
+              preload="none"
               poster="/clinic-office.webp"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
             >
@@ -312,9 +326,9 @@ export default function CaseStudies() {
                 "clamp(40px, 9vw, 64px) clamp(20px, 5vw, 40px) clamp(48px, 9vw, 80px)",
             }}
           >
-            {cases.map((c) => (
+            {cases.map((c, i) => (
               <figure key={c.title} style={{ margin: "0 0 clamp(40px, 10vw, 64px)" }}>
-                <BeforeAfterStack c={c} t={t} variant="solid" />
+                <BeforeAfterStack c={c} t={t} variant="solid" before={`/${i + 1}-before.webp`} after={`/${i + 1}-after.webp`} />
                 <span style={{ display: "inline-block", marginTop: 18, background: "rgba(40,50,63,0.08)", color: "#28323f", fontSize: 12, fontWeight: 600, padding: "5px 11px", borderRadius: 999 }}>
                   {c.title}
                 </span>
@@ -364,13 +378,11 @@ export default function CaseStudies() {
           pointerEvents: "none",
         }}
       >
-        <video autoPlay muted loop playsInline poster="/clinic-office.webp" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}>
-          <source src="/video-card.mp4" type="video/mp4" />
-        </video>
+        <AutoplayVideo autoPlay loop poster="/clinic-office.webp" src="/video-card.mp4" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
         <div className="ov-grad" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(16,20,26,0.6) 0%, rgba(16,20,26,0.25) 30%, rgba(16,20,26,0.4) 62%, rgba(16,20,26,0.82) 100%)" }} />
 
         {/* one testimonial (left) + one card (right) per case, stacked */}
-        {cases.map((c) => {
+        {cases.map((c, i) => {
           const words = c.testimonial.quote.split(" ");
           return (
             <div key={c.title}>
@@ -411,7 +423,7 @@ export default function CaseStudies() {
                   willChange: "transform",
                 }}
               >
-                <BeforeAfterStack c={c} t={t} variant="glass" />
+                <BeforeAfterStack c={c} t={t} variant="glass" before={`/${i + 1}-before.webp`} after={`/${i + 1}-after.webp`} />
               </div>
             </div>
           );
@@ -442,10 +454,14 @@ function BeforeAfterStack({
   c,
   t,
   variant,
+  before,
+  after,
 }: {
   c: Case;
   t: ReturnType<typeof useContent>;
   variant: "glass" | "solid";
+  before: string;
+  after: string;
 }) {
   const glass = variant === "glass";
   const imgWrap = {
@@ -454,6 +470,22 @@ function BeforeAfterStack({
     borderRadius: 10,
     overflow: "hidden",
     background: glass ? "rgba(8,11,16,0.5)" : "#eceef0",
+  } as const;
+  // small corner pill labelling each photo (Înainte / După)
+  const tag = {
+    position: "absolute",
+    left: 8,
+    top: 8,
+    zIndex: 2,
+    padding: "3px 9px",
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.02em",
+    color: "#fbfbfb",
+    background: "rgba(12,16,21,0.62)",
+    backdropFilter: "blur(4px)",
+    WebkitBackdropFilter: "blur(4px)",
   } as const;
   return (
     <article
@@ -474,10 +506,12 @@ function BeforeAfterStack({
       }}
     >
       <div className="ba-imgwrap" style={imgWrap}>
-        <ImageSlot caption={`${c.title} — ${t.cases.before}`} shape="rect" dark={glass} showLabel={false} />
+        <ImageSlot src={before} caption={`${c.title} — ${t.cases.before}`} shape="rect" dark={glass} showLabel={false} />
+        <span style={tag}>{t.cases.before}</span>
       </div>
       <div className="ba-imgwrap" style={imgWrap}>
-        <ImageSlot caption={`${c.title} — ${t.cases.after}`} shape="rect" dark={glass} showLabel={false} />
+        <ImageSlot src={after} caption={`${c.title} — ${t.cases.after}`} shape="rect" dark={glass} showLabel={false} />
+        <span style={{ ...tag, background: "rgba(40,120,90,0.85)" }}>{t.cases.after}</span>
       </div>
       <span
         aria-hidden

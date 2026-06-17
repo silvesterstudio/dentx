@@ -65,7 +65,7 @@ export const ro: Content = {
       },
       {
         name: "Burența Galina",
-        role: "Infirmieră",
+        role: "Asistentă medicală",
         bio: "Menține clinica impecabil de curată, pentru un mediu sigur și primitor. Respectă riguros toate normele de sterilizare și igienă.",
       },
       {
@@ -164,8 +164,19 @@ export const ro: Content = {
           "Coroane din zirconiu de înaltă rezistență cu aspect 100% natural",
           "Coroane metalo-ceramice durabile la prețuri accesibile",
           "Punți dentare fixe pentru înlocuirea dinților lipsă fără implant",
-          "Proteze mobile parțiale și totale, clasice și pe telescoape",
+          "Proteze mobile parțiale și totale, clasice și moderne",
           "Reparații rapide ale protezelor existente",
+        ],
+      },
+      {
+        name: "Reabilitare totală",
+        tagline: "Reconstrucție completă a zâmbetului pe implanturi — All-on-4 / All-on-6",
+        details: [
+          "Reabilitare orală completă pentru pacienții fără dinți sau cu dinți compromiși",
+          "Soluții fixe pe implanturi All-on-4 și All-on-6 — o arcadă întreagă pe 4-6 implanturi",
+          "Plan de tratament digital cu ghidaj chirurgical pentru precizie maximă",
+          "Dinți provizorii ficși în aceeași zi după montarea implanturilor",
+          "Lucrare finală din zirconiu pentru funcție și estetică pe termen lung",
         ],
       },
     ],
@@ -180,7 +191,7 @@ export const ro: Content = {
         tag: "Implant",
         title: "Implant cu coroană",
         result:
-          "Înlocuirea unui dinte lipsă cu un implant și coroană — un rezultat natural și durabil.",
+          "Înlocuirea unui dinte lipsă cu un implant și o coroană — un rezultat natural și durabil.",
         testimonial: {
           quote:
             "Aveam un dinte lipsă și mă temeam de implant. La Dent-X m-am simțit în siguranță de la prima vizită, iar rezultatul e atât de natural încât zâmbesc din nou fără rețineri.",
@@ -189,22 +200,67 @@ export const ro: Content = {
       },
       {
         tag: "Estetică",
-        title: "Coroane din zirconiu",
-        result: "Un zâmbet uniform și luminos cu coroane din zirconiu.",
+        title: "Fațete estetice",
+        result: "Un zâmbet uniform și luminos cu fațete și coroane ceramice.",
         testimonial: {
           quote:
-            "Mi-am dorit mereu un zâmbet uniform. Coroanele din zirconiu arată exact ca dinții naturali — nimeni nu observă că am avut o lucrare.",
+            "Dinții îmi erau pătați și inegali. Acum am un zâmbet alb și uniform, exact ca dinții naturali — nimeni nu observă că am avut o lucrare.",
           author: "Elena Moraru",
         },
       },
       {
-        tag: "Restaurare",
-        title: "Restaurare estetică",
-        result: "Refacerea formei și culorii dinților frontali.",
+        tag: "Implant",
+        title: "Reabilitare pe implanturi",
+        result:
+          "Refacerea completă a arcadei superioare cu o lucrare fixă pe implanturi.",
         testimonial: {
           quote:
-            "Dinții din față îmi erau ciobiți și fără culoare. După restaurare arată naturali și luminoși, de parcă nu aș fi avut niciodată o problemă.",
+            "Îmi pierdusem aproape toți dinții de sus. Cu lucrarea pe implanturi mănânc și râd din nou normal — mi-au redat încrederea.",
+          author: "Vasile Ciobanu",
+        },
+      },
+      {
+        tag: "Estetică",
+        title: "Coroane și fațete dentare",
+        result:
+          "Reconstrucția zâmbetului printr-un tratament complex de coroane și fațete dentare.",
+        testimonial: {
+          quote:
+            "Dantura mea era uzată și deteriorată de ani de zile. Prin coroane și fațete, echipa Dent-X mi-a reconstruit complet zâmbetul — rezultatul a depășit așteptările.",
+          author: "Mihai Popescu",
+        },
+      },
+      {
+        tag: "Estetică",
+        title: "Transformarea zâmbetului",
+        result:
+          "Refacerea formei și culorii dinților frontali pentru un zâmbet armonios.",
+        testimonial: {
+          quote:
+            "Dinții din față îmi erau ciobiți și fără culoare. După lucrare arată naturali și luminoși, de parcă nu aș fi avut niciodată o problemă.",
           author: "Sergiu Vrabie",
+        },
+      },
+      {
+        tag: "Estetică",
+        title: "Tratamentul fluorozei (Icon)",
+        result:
+          "Tratarea fluorozei dentare prin infiltrare cu rășină Icon — petele dispar, iar țesutul dentar natural este păstrat, fără șlefuire.",
+        testimonial: {
+          quote:
+            "Aveam pete albe și maronii pe dinți din cauza fluorozei. Prin procedura Icon au dispărut fără să-mi atingă dinții sănătoși — un rezultat natural, fără durere.",
+          author: "Andrei Lungu",
+        },
+      },
+      {
+        tag: "Reabilitare",
+        title: "Reabilitare totală",
+        result:
+          "Reabilitare orală totală a unui pacient fără dinți — o dantură nouă, fixă și funcțională.",
+        testimonial: {
+          quote:
+            "Rămăsesem complet fără dinți și nu mai puteam mânca normal. După reabilitarea totală am o dantură fixă și stabilă — am o viață nouă.",
+          author: "Gheorghe Rusu",
         },
       },
     ],

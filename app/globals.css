@@ -217,12 +217,6 @@ html.js-reveal .reveal-img.in-view {
 .clinic-mobile {
   display: none;
 }
-/* Services video-pin sentinel is mobile-only (it would disturb the 12-col
-   desktop bento otherwise). */
-.svc-video-sentinel {
-  display: none;
-}
-
 /* Scroll-lag fix for the Servicii video. The autoplaying clinic clip repaints
    ~30×/s; without isolation each repaint dirties the whole bento grid + section,
    so scrolling past it stutters. Promote the video itself to its own compositor
@@ -498,6 +492,15 @@ html.js-reveal .reveal-img.in-view {
     min-height: 0 !important;
     border-radius: 18px !important;
   }
+  /* Give each panel its own compositor layer (≤ 1 viewport wide) and contain its
+     paint. Otherwise the 6-panel strip is one giant layer ~6 viewports wide that
+     mobile GPUs must re-tile every frame of the horizontal sweep — the Echipa
+     scroll lag. Per-panel layers keep each texture small and the sweep smooth. */
+  .team-panel {
+    contain: layout paint !important;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
   .team-info {
     position: absolute !important;
     left: 0 !important;
@@ -525,11 +528,10 @@ html.js-reveal .reveal-img.in-view {
     color: rgba(251, 251, 251, 0.85) !important;
   }
 
-  /* Servicii on mobile: a SCROLLABLE bento of SQUARE cards. The video tile is
-     the last card and is STICKY — when it pins to the top it expands to
-     fullscreen (driven by CaseStudies via #svc-video-sentinel), then the Cazuri
-     conveyor plays. So the bento can be longer than one screen AND the desktop
-     video-expand is preserved (the grid's padding-bottom is the pin/expand room). */
+  /* Servicii on mobile: a SCROLLABLE bento of SQUARE cards. The video tile is the
+     last (square) card — once it scrolls fully into view it expands to fullscreen
+     (CaseStudies overlay) and the Cazuri conveyor plays. The grid's padding-bottom
+     is the pin/expand scroll room. */
   #services {
     height: auto !important;
   }
@@ -542,10 +544,16 @@ html.js-reveal .reveal-img.in-view {
     grid-template-columns: 1fr 1fr !important;
     grid-template-rows: auto !important;
     grid-auto-rows: auto !important;
-    /* normal row flow (no dense) so the sentinel stays right before the video */
     grid-auto-flow: row !important;
     gap: clamp(8px, 2.5vw, 12px) !important;
     padding-bottom: 90svh !important;
+  }
+  /* Contact fills the screen so the video can lift fully off and reveal it
+     completely (no leftover video strip) as the last section. 100vh = the large
+     (address-bar-hidden) viewport, which matches innerHeight at the page bottom,
+     so contactTop reaches 0 and the lift clears the screen. */
+  #contact {
+    min-height: 100vh !important;
   }
   #services-grid > h2 {
     grid-column: 1 / -1 !important;
@@ -564,23 +572,15 @@ html.js-reveal .reveal-img.in-view {
   #services-grid .svc-desc {
     display: none !important;
   }
-  /* sentinel: 0-height full-width row marking the video's pin point */
-  .svc-video-sentinel {
-    display: block !important;
-    grid-column: 1 / -1 !important;
-    height: 0 !important;
-    margin: 0 !important;
-  }
-  /* video tile — last card, full-width. It scrolls in naturally; the expand
-     begins once it's FULLY IN VIEW AT THE BOTTOM and grows upward to fullscreen
-     FROM THAT POSITION (handled in CaseStudies via #svc-video-sentinel, which
-     takes over with the fixed overlay). The growing overlay is anchored at the
-     bottom and the dark backdrop ramps in fast, so the cards scrolling behind
-     read as a frozen stage. */
+  /* video tile — the LAST bento card, a SQUARE like every other card so it sits
+     neatly beside the final service instead of a mismatched full-width banner.
+     It scrolls in naturally; once it's fully in view it grows to fullscreen
+     (CaseStudies fixed overlay) and the dark backdrop ramps in fast, so the
+     cards scrolling behind read as a frozen stage. */
   #quote-tile {
-    grid-column: 1 / -1 !important;
+    grid-column: auto !important;
     grid-row: auto !important;
-    aspect-ratio: 16 / 9 !important;
+    aspect-ratio: 1 / 1 !important;
     min-height: 0 !important;
   }
 
@@ -597,24 +597,33 @@ html.js-reveal .reveal-img.in-view {
     left: clamp(20px, 5vw, 40px) !important;
     right: clamp(20px, 5vw, 40px) !important;
     width: auto !important;
-    top: clamp(120px, 18vh, 190px) !important;
+    top: clamp(132px, 20vh, 210px) !important;
   }
   .ov-quote-block blockquote {
     font-size: clamp(15px, 4.2vw, 20px) !important;
   }
-  /* before/after card: keep the 2-row stack (before OVER after), but SHRUNK so
-     it sits in the bottom strip and clears the testimonial text above it even
-     for the longest quote / shortest phone. Narrower width + shorter (16:9)
-     image rows keep the whole stack compact. */
+  /* before/after on mobile: lay the two photos SIDE BY SIDE (before | after) in a
+     WIDE card across the bottom. The desktop's tall before-OVER-after stack looked
+     cramped and unfinished in the narrow phone column; a short wide card reads
+     clearly, fills the width, and clears the title + testimonial above it. */
   .ov-ba-card {
     left: 50% !important;
     right: auto !important;
-    width: min(58vw, 240px) !important;
-    margin-left: calc(min(58vw, 240px) / -2) !important;
+    width: min(92vw, 460px) !important;
+    margin-left: calc(min(92vw, 460px) / -2) !important;
     top: auto !important;
-    bottom: clamp(16px, 4vh, 28px) !important;
+    bottom: clamp(18px, 5vh, 40px) !important;
+  }
+  .ov-ba-card .ba-stack {
+    flex-direction: row !important;
   }
   .ov-ba-card .ba-imgwrap {
-    aspect-ratio: 16 / 9 !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    aspect-ratio: 4 / 3 !important;
+  }
+  /* the seam node points RIGHT (before → after) between the side-by-side photos */
+  .ov-ba-card .ba-node {
+    transform: translate(-50%, -50%) rotate(-90deg) !important;
   }
 }

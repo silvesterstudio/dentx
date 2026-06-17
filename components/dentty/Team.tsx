@@ -3,13 +3,16 @@
 import { useEffect, useRef } from "react";
 import { useContent } from "./LanguageProvider";
 
+// Filenames are ASCII-only on purpose: a non-Latin1 char (the "Ț", U+021A=538) in
+// an image URL makes Next throw "Cannot convert argument to a ByteString" when it
+// builds the resource header, 500-ing the page (which killed the video expand).
 const PHOTOS = [
-  "/Ț. Dorel.webp",
+  "/Turcanu-Dorel.webp",
   "/G. Aleandru.webp",
   "/C. Natalia.webp",
   "/P. Irina.webp",
   "/B.Galina.webp",
-  "/Ț. Lidia.webp",
+  "/Turcanu-Lidia.webp",
 ];
 
 // Vertical scroll (svh) spent per member transition while the team is pinned.
@@ -43,6 +46,7 @@ export default function Team() {
 
   useEffect(() => {
     let raf = 0;
+    let lastP = -1;
     const update = () => {
       raf = 0;
       const strip = stripRef.current;
@@ -58,6 +62,11 @@ export default function Team() {
       const scrollDist = Math.max(1, (total - 1) * (DWELL_VH / 100) * vh);
       const offset = -sentinel.getBoundingClientRect().top; // 0 at pin start, grows
       const p = Math.min(1, Math.max(0, offset / scrollDist));
+      // Skip the style writes when the sweep position hasn't meaningfully moved
+      // (e.g. scrolling elsewhere on the page once the team is parked at p=0/1),
+      // so we don't repaint the strip every idle scroll frame on mobile.
+      if (Math.abs(p - lastP) < 0.0005) return;
+      lastP = p;
       // Panels are flex:0 0 100% in a 100%-wide strip → one panel = 100%.
       strip.style.transform = `translate3d(${-((total - 1) * 100 * p)}%,0,0)`;
       if (bar) bar.style.transform = `scaleX(${p})`;
