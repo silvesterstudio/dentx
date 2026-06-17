@@ -379,7 +379,7 @@ export default function CaseStudies() {
         }}
       >
         <AutoplayVideo autoPlay loop poster="/clinic-office.webp" src="/video-card.mp4" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-        <div className="ov-grad" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(16,20,26,0.82) 0%, rgba(16,20,26,0.62) 12%, rgba(16,20,26,0.3) 30%, rgba(16,20,26,0.25) 50%, rgba(16,20,26,0.4) 64%, rgba(16,20,26,0.82) 100%)" }} />
+        <div className="ov-grad" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(16,20,26,0.6) 0%, rgba(16,20,26,0.25) 30%, rgba(16,20,26,0.4) 62%, rgba(16,20,26,0.82) 100%)" }} />
 
         {/* one testimonial (left) + one card (right) per case, stacked */}
         {cases.map((c, i) => {
@@ -431,6 +431,26 @@ export default function CaseStudies() {
 
         {/* title — painted last so it stays above the cards */}
         <div className="ov-caption" style={{ position: "absolute", left: "clamp(20px, 4vw, 72px)", right: "clamp(20px, 4vw, 72px)", top: "clamp(96px, 13vh, 150px)" }}>
+          {/* Local dark pool behind the title. On real phones the playing video is
+              brightness-boosted by the display, which makes the pure-white title
+              read as gray (simultaneous contrast) even though the pixels are white.
+              A strong dark scrim ONLY here gives the white text local contrast so it
+              reads white, while the rest of the clip stays bright. Reveals with the
+              title (.play); fades out with the caption on lift. */}
+          <div
+            aria-hidden
+            className="ov-scrim"
+            style={{
+              position: "absolute",
+              left: "-12vw",
+              right: "-12vw",
+              top: "-12vh",
+              height: "clamp(260px, 46vh, 460px)",
+              background:
+                "linear-gradient(180deg, rgba(8,11,16,0.82) 0%, rgba(8,11,16,0.74) 32%, rgba(8,11,16,0.46) 60%, rgba(8,11,16,0.14) 84%, rgba(8,11,16,0) 100%)",
+              pointerEvents: "none",
+            }}
+          />
           <div className="ov-rule" />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24, flexWrap: "wrap", marginTop: "clamp(14px, 1.6vw, 22px)" }}>
             <h2 className="ov-reveal ov-title-r" style={{ margin: 0, color: "#fbfbfb", fontSize: "clamp(40px, 5vw, 80px)", fontWeight: 500, lineHeight: 0.96, letterSpacing: "-0.03em" }}>
