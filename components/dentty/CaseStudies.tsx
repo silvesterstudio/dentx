@@ -511,7 +511,7 @@ function BeforeAfterStack({
       </div>
       <div className="ba-imgwrap" style={imgWrap}>
         <ImageSlot src={after} caption={`${c.title} — ${t.cases.after}`} shape="rect" dark={glass} showLabel={false} />
-        <span style={{ ...tag, background: "rgba(40,120,90,0.85)" }}>{t.cases.after}</span>
+        <span style={tag}>{t.cases.after}</span>
       </div>
       <span
         aria-hidden

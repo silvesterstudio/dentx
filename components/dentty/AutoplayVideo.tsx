@@ -32,7 +32,28 @@ export default function AutoplayVideo({ src, ...rest }: Props) {
     };
     tryPlay();
     v.addEventListener("loadeddata", tryPlay, { once: true });
-    return () => v.removeEventListener("loadeddata", tryPlay);
+
+    // Mobile browsers (esp. iOS Safari, and any tab in Low-Power/data-saver mode)
+    // often ignore an autoplay kicked while the element is offscreen, leaving a
+    // frozen poster the user has to TAP to start. Watch the card and (re)kick
+    // play() as it APPROACHES the viewport — the wide rootMargin fires it well
+    // before the user scrolls it into view ("predict the start"), so the clip is
+    // already running by the time Servicii lands. No tap required.
+    let io: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== "undefined") {
+      io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) if (e.isIntersecting) tryPlay();
+        },
+        { rootMargin: "60% 0px 60% 0px", threshold: 0.01 },
+      );
+      io.observe(v);
+    }
+
+    return () => {
+      v.removeEventListener("loadeddata", tryPlay);
+      io?.disconnect();
+    };
   }, []);
 
   return (
