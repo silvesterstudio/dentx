@@ -393,31 +393,41 @@ export default function CaseStudies() {
                   left: "clamp(22px, 5vw, 90px)",
                   top: "clamp(230px, 32vh, 380px)",
                   width: "min(40vw, 520px)",
-                  boxSizing: "border-box",
-                  // soft dark pool behind the white testimonial text — same reason
-                  // as the title scrim: the display-boosted video makes the white
-                  // read gray. A radial fade (no backdrop-blur, to keep the
-                  // conveyor scroll cheap) keeps the text on dark while the pool's
-                  // edges melt into the bright clip. Fades with the block's opacity.
-                  padding: "clamp(18px, 2vw, 26px) clamp(20px, 2.2vw, 30px)",
-                  borderRadius: 20,
-                  background:
-                    "radial-gradient(140% 130% at 50% 40%, rgba(8,11,16,0.76) 0%, rgba(8,11,16,0.62) 50%, rgba(8,11,16,0.26) 80%, rgba(8,11,16,0) 100%)",
                   opacity: 0,
                 }}
               >
-                <div className="oq-label" style={{ display: "inline-block", background: "rgba(251,251,251,0.16)", color: "#fbfbfb", fontSize: 13, fontWeight: 600, padding: "6px 13px", borderRadius: 999, marginBottom: 18 }}>
-                  {c.title}
-                </div>
-                <blockquote style={{ margin: 0, color: "#fbfbfb", fontSize: "clamp(19px, 1.9vw, 31px)", fontWeight: 500, lineHeight: 1.32, letterSpacing: "-0.01em" }}>
-                  {words.map((w, i) => (
-                    <span key={i} className="oq-word" style={{ opacity: 0 }}>
-                      {w}{i < words.length - 1 ? " " : ""}
-                    </span>
-                  ))}
-                </blockquote>
-                <div className="oq-author" style={{ opacity: 0, marginTop: 20, color: "rgba(251,251,251,0.85)", fontSize: "clamp(15px, 1.2vw, 18px)", fontWeight: 600 }}>
-                  — {c.testimonial.author}
+                {/* Same treatment as the section title: a DIFFUSE soft dark pool
+                    behind the text (NOT a card) so the white testimonial reads
+                    white over the brightness-boosted video. The pool's edges melt
+                    into the bright clip. It rides the block's per-case opacity; the
+                    relative wrapper keeps the words painted ON TOP of the pool. */}
+                <div
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    left: "-30%",
+                    right: "-30%",
+                    top: "-44px",
+                    bottom: "-48px",
+                    background:
+                      "radial-gradient(74% 72% at 50% 46%, rgba(8,11,16,0.8) 0%, rgba(8,11,16,0.66) 44%, rgba(8,11,16,0.3) 72%, rgba(8,11,16,0) 100%)",
+                    pointerEvents: "none",
+                  }}
+                />
+                <div style={{ position: "relative" }}>
+                  <div className="oq-label" style={{ display: "inline-block", background: "rgba(251,251,251,0.16)", color: "#fbfbfb", fontSize: 13, fontWeight: 600, padding: "6px 13px", borderRadius: 999, marginBottom: 18 }}>
+                    {c.title}
+                  </div>
+                  <blockquote style={{ margin: 0, color: "#fbfbfb", fontSize: "clamp(19px, 1.9vw, 31px)", fontWeight: 500, lineHeight: 1.32, letterSpacing: "-0.01em" }}>
+                    {words.map((w, i) => (
+                      <span key={i} className="oq-word" style={{ opacity: 0 }}>
+                        {w}{i < words.length - 1 ? " " : ""}
+                      </span>
+                    ))}
+                  </blockquote>
+                  <div className="oq-author" style={{ opacity: 0, marginTop: 20, color: "rgba(251,251,251,0.85)", fontSize: "clamp(15px, 1.2vw, 18px)", fontWeight: 600 }}>
+                    — {c.testimonial.author}
+                  </div>
                 </div>
               </div>
 
