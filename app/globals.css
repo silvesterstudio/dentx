@@ -63,14 +63,6 @@ body {
  * first draws out from the centre to both edges, then the title and tagline rise
  * up from behind a mask, preload-style. Re-arms when scrolled back out.
  */
-/* dark pool behind the title — fades in WITH the title reveal, out on lift */
-.ov-scrim {
-  opacity: 0;
-  transition: opacity 0.55s ease;
-}
-.ov-caption.play .ov-scrim {
-  opacity: 1;
-}
 .ov-rule {
   height: 1px;
   width: 100%;
@@ -104,10 +96,6 @@ body {
 /* the before/after cards are a SCROLL-SCRUBBED conveyor (transform/opacity set
    per-frame by the effect, tied to scroll) — no CSS transition here. */
 @media (prefers-reduced-motion: reduce) {
-  .ov-scrim {
-    opacity: 1;
-    transition: none;
-  }
   .ov-rule {
     transform: scaleX(1);
     transition: none;

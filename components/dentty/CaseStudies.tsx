@@ -226,17 +226,17 @@ export default function CaseStudies() {
 
         const data = ovBlockData[k];
         if (!data) continue;
-        const { block } = data;
-        // The testimonial appears as a SOLID, fully-opaque white block (like the
-        // title), then fades out as it exits. The words used to fade in one-by-one
-        // via opacity, and the block opacity ramped slowly — so resting mid-scroll
-        // left the white text rendering as semi-transparent GRAY. Now block opacity
-        // alone shows/hides it: it snaps to full opacity early in the rise and
-        // stays 1 for the whole hold, and the words + author are always 100% white
-        // (set in markup). Result: the quote reads crisp white the way the title does.
-        const bIn = clamp01((localK - move * 0.2) / (move * 0.35));
+        const { block, words: ws, author } = data;
+        const bIn = clamp01((localK - move * 0.6) / (move * 0.5));
         const bOut = isLast ? 1 : clamp01((move + hold + moveOut * 0.6 - localK) / (moveOut * 0.6));
         block.style.opacity = String((localK <= 0 ? 0 : Math.min(bIn, bOut)) * sf);
+        // words reveal ONLY during the Hold (i.e. after the card has stopped)
+        const tp = clamp01((localK - move) / hold);
+        const head = tp * (ws.length + 4);
+        ws.forEach((w, i) => {
+          w.style.opacity = String(clamp01(head - i));
+        });
+        if (author) author.style.opacity = String(clamp01((tp - 0.9) / 0.1));
       }
     };
 
@@ -379,7 +379,13 @@ export default function CaseStudies() {
         }}
       >
         <AutoplayVideo autoPlay loop poster="/clinic-office.webp" src="/video-card.mp4" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-        <div className="ov-grad" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(16,20,26,0.6) 0%, rgba(16,20,26,0.25) 30%, rgba(16,20,26,0.4) 62%, rgba(16,20,26,0.82) 100%)" }} />
+        {/* ONE black gradient over the whole clip — dark enough that ALL the white
+            text (title + testimonials) reads white wherever it sits, instead of
+            per-text dark blocks behind each one. Darkest at the top (title), still
+            strong through the upper-middle (where the testimonials reveal), eased a
+            little lower so the footage breathes, dark again at the bottom for the
+            before/after card. */}
+        <div className="ov-grad" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,11,16,0.82) 0%, rgba(8,11,16,0.74) 28%, rgba(8,11,16,0.66) 50%, rgba(8,11,16,0.5) 68%, rgba(8,11,16,0.42) 80%, rgba(8,11,16,0.68) 100%)" }} />
 
         {/* one testimonial (left) + one card (right) per case, stacked */}
         {cases.map((c, i) => {
@@ -396,44 +402,18 @@ export default function CaseStudies() {
                   opacity: 0,
                 }}
               >
-                {/* Same treatment as the section title: a DIFFUSE soft dark pool
-                    behind the text (NOT a card) so the white testimonial reads
-                    white over the brightness-boosted video. The pool's edges melt
-                    into the bright clip. It rides the block's per-case opacity; the
-                    relative wrapper keeps the words painted ON TOP of the pool. */}
-                <div
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    left: "-28%",
-                    right: "-28%",
-                    top: "-50px",
-                    bottom: "-54px",
-                    // Strong, WIDE dark backing — stays ~0.85 across the whole
-                    // text and only melts away at the outer edges, so the white
-                    // testimonial pops the same way the title does. (My earlier
-                    // pool faded to ~0.3 right where the text sat, which is why it
-                    // read gray.) Plain gradient — no backdrop-blur — keeps the
-                    // scroll-scrubbed conveyor cheap; fades with the block opacity.
-                    background:
-                      "radial-gradient(128% 112% at 50% 45%, rgba(8,11,16,0.9) 0%, rgba(8,11,16,0.86) 58%, rgba(8,11,16,0.64) 80%, rgba(8,11,16,0.24) 93%, rgba(8,11,16,0) 100%)",
-                    pointerEvents: "none",
-                  }}
-                />
-                <div style={{ position: "relative" }}>
-                  <div className="oq-label" style={{ display: "inline-block", background: "rgba(251,251,251,0.16)", color: "#fbfbfb", fontSize: 13, fontWeight: 600, padding: "6px 13px", borderRadius: 999, marginBottom: 18 }}>
-                    {c.title}
-                  </div>
-                  <blockquote style={{ margin: 0, color: "#fbfbfb", fontSize: "clamp(19px, 1.9vw, 31px)", fontWeight: 500, lineHeight: 1.32, letterSpacing: "-0.01em" }}>
-                    {words.map((w, i) => (
-                      <span key={i} className="oq-word">
-                        {w}{i < words.length - 1 ? " " : ""}
-                      </span>
-                    ))}
-                  </blockquote>
-                  <div className="oq-author" style={{ marginTop: 20, color: "rgba(251,251,251,0.92)", fontSize: "clamp(15px, 1.2vw, 18px)", fontWeight: 600 }}>
-                    — {c.testimonial.author}
-                  </div>
+                <div className="oq-label" style={{ display: "inline-block", background: "rgba(251,251,251,0.16)", color: "#fbfbfb", fontSize: 13, fontWeight: 600, padding: "6px 13px", borderRadius: 999, marginBottom: 18 }}>
+                  {c.title}
+                </div>
+                <blockquote style={{ margin: 0, color: "#fbfbfb", fontSize: "clamp(19px, 1.9vw, 31px)", fontWeight: 500, lineHeight: 1.32, letterSpacing: "-0.01em" }}>
+                  {words.map((w, i) => (
+                    <span key={i} className="oq-word" style={{ opacity: 0 }}>
+                      {w}{i < words.length - 1 ? " " : ""}
+                    </span>
+                  ))}
+                </blockquote>
+                <div className="oq-author" style={{ opacity: 0, marginTop: 20, color: "rgba(251,251,251,0.85)", fontSize: "clamp(15px, 1.2vw, 18px)", fontWeight: 600 }}>
+                  — {c.testimonial.author}
                 </div>
               </div>
 
@@ -457,26 +437,6 @@ export default function CaseStudies() {
 
         {/* title — painted last so it stays above the cards */}
         <div className="ov-caption" style={{ position: "absolute", left: "clamp(20px, 4vw, 72px)", right: "clamp(20px, 4vw, 72px)", top: "clamp(96px, 13vh, 150px)" }}>
-          {/* Local dark pool behind the title. On real phones the playing video is
-              brightness-boosted by the display, which makes the pure-white title
-              read as gray (simultaneous contrast) even though the pixels are white.
-              A strong dark scrim ONLY here gives the white text local contrast so it
-              reads white, while the rest of the clip stays bright. Reveals with the
-              title (.play); fades out with the caption on lift. */}
-          <div
-            aria-hidden
-            className="ov-scrim"
-            style={{
-              position: "absolute",
-              left: "-12vw",
-              right: "-12vw",
-              top: "-12vh",
-              height: "clamp(260px, 46vh, 460px)",
-              background:
-                "linear-gradient(180deg, rgba(8,11,16,0.82) 0%, rgba(8,11,16,0.74) 32%, rgba(8,11,16,0.46) 60%, rgba(8,11,16,0.14) 84%, rgba(8,11,16,0) 100%)",
-              pointerEvents: "none",
-            }}
-          />
           <div className="ov-rule" />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24, flexWrap: "wrap", marginTop: "clamp(14px, 1.6vw, 22px)" }}>
             <h2 className="ov-reveal ov-title-r" style={{ margin: 0, color: "#fbfbfb", fontSize: "clamp(40px, 5vw, 80px)", fontWeight: 500, lineHeight: 0.96, letterSpacing: "-0.03em" }}>
