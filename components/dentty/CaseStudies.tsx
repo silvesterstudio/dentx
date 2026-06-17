@@ -379,7 +379,7 @@ export default function CaseStudies() {
         }}
       >
         <AutoplayVideo autoPlay loop poster="/clinic-office.webp" src="/video-card.mp4" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-        <div className="ov-grad" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(16,20,26,0.6) 0%, rgba(16,20,26,0.25) 30%, rgba(16,20,26,0.4) 62%, rgba(16,20,26,0.82) 100%)" }} />
+        <div className="ov-grad" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(16,20,26,0.82) 0%, rgba(16,20,26,0.62) 12%, rgba(16,20,26,0.3) 30%, rgba(16,20,26,0.25) 50%, rgba(16,20,26,0.4) 64%, rgba(16,20,26,0.82) 100%)" }} />
 
         {/* one testimonial (left) + one card (right) per case, stacked */}
         {cases.map((c, i) => {
