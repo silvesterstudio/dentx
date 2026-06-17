@@ -226,17 +226,17 @@ export default function CaseStudies() {
 
         const data = ovBlockData[k];
         if (!data) continue;
-        const { block, words: ws, author } = data;
-        const bIn = clamp01((localK - move * 0.6) / (move * 0.5));
+        const { block } = data;
+        // The testimonial appears as a SOLID, fully-opaque white block (like the
+        // title), then fades out as it exits. The words used to fade in one-by-one
+        // via opacity, and the block opacity ramped slowly — so resting mid-scroll
+        // left the white text rendering as semi-transparent GRAY. Now block opacity
+        // alone shows/hides it: it snaps to full opacity early in the rise and
+        // stays 1 for the whole hold, and the words + author are always 100% white
+        // (set in markup). Result: the quote reads crisp white the way the title does.
+        const bIn = clamp01((localK - move * 0.2) / (move * 0.35));
         const bOut = isLast ? 1 : clamp01((move + hold + moveOut * 0.6 - localK) / (moveOut * 0.6));
         block.style.opacity = String((localK <= 0 ? 0 : Math.min(bIn, bOut)) * sf);
-        // words reveal ONLY during the Hold (i.e. after the card has stopped)
-        const tp = clamp01((localK - move) / hold);
-        const head = tp * (ws.length + 4);
-        ws.forEach((w, i) => {
-          w.style.opacity = String(clamp01(head - i));
-        });
-        if (author) author.style.opacity = String(clamp01((tp - 0.9) / 0.1));
       }
     };
 
@@ -426,12 +426,12 @@ export default function CaseStudies() {
                   </div>
                   <blockquote style={{ margin: 0, color: "#fbfbfb", fontSize: "clamp(19px, 1.9vw, 31px)", fontWeight: 500, lineHeight: 1.32, letterSpacing: "-0.01em" }}>
                     {words.map((w, i) => (
-                      <span key={i} className="oq-word" style={{ opacity: 0 }}>
+                      <span key={i} className="oq-word">
                         {w}{i < words.length - 1 ? " " : ""}
                       </span>
                     ))}
                   </blockquote>
-                  <div className="oq-author" style={{ opacity: 0, marginTop: 20, color: "rgba(251,251,251,0.85)", fontSize: "clamp(15px, 1.2vw, 18px)", fontWeight: 600 }}>
+                  <div className="oq-author" style={{ marginTop: 20, color: "rgba(251,251,251,0.92)", fontSize: "clamp(15px, 1.2vw, 18px)", fontWeight: 600 }}>
                     — {c.testimonial.author}
                   </div>
                 </div>
