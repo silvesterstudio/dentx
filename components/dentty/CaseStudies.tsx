@@ -393,6 +393,16 @@ export default function CaseStudies() {
                   left: "clamp(22px, 5vw, 90px)",
                   top: "clamp(230px, 32vh, 380px)",
                   width: "min(40vw, 520px)",
+                  boxSizing: "border-box",
+                  // soft dark pool behind the white testimonial text — same reason
+                  // as the title scrim: the display-boosted video makes the white
+                  // read gray. A radial fade (no backdrop-blur, to keep the
+                  // conveyor scroll cheap) keeps the text on dark while the pool's
+                  // edges melt into the bright clip. Fades with the block's opacity.
+                  padding: "clamp(18px, 2vw, 26px) clamp(20px, 2.2vw, 30px)",
+                  borderRadius: 20,
+                  background:
+                    "radial-gradient(140% 130% at 50% 40%, rgba(8,11,16,0.76) 0%, rgba(8,11,16,0.62) 50%, rgba(8,11,16,0.26) 80%, rgba(8,11,16,0) 100%)",
                   opacity: 0,
                 }}
               >
