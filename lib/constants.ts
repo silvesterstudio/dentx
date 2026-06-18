@@ -5,9 +5,8 @@ export const CLINIC_EMAIL = "dentx.md@gmail.com";
 
 export type Phone = { display: string; e164: string };
 
-// Both numbers from the clinic; each reachable on WhatsApp + Viber.
+// Reception number — reachable on WhatsApp + Viber.
 export const CLINIC_PHONES: Phone[] = [
-  { display: "079 63 40 73", e164: "37379634073" },
   { display: "060 25 00 25", e164: "37360250025" },
 ];
 

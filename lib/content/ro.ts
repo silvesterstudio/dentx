@@ -66,7 +66,7 @@ export const ro: Content = {
       {
         name: "Burența Galina",
         role: "Asistentă medicală",
-        bio: "Menține clinica impecabil de curată, pentru un mediu sigur și primitor. Respectă riguros toate normele de sterilizare și igienă.",
+        bio: "Asistentă medicală atentă, sprijină echipa la fiecare procedură și se asigură că totul este pregătit pentru tine. Respectă riguros toate normele de sterilizare și igienă, pentru un mediu sigur și primitor.",
       },
       {
         name: "Țurcanu Lidia",
@@ -287,9 +287,9 @@ export const ro: Content = {
     hoursLabel: "Program",
     address: "str. Mircea cel Bătrîn 14, Chișinău",
     hours: [
-      { days: "Luni – Vineri", time: "08:00 – 20:00" },
-      { days: "Sâmbătă", time: "09:00 – 16:00" },
-      { days: "Duminică", time: "Închis" },
+      { days: "Luni – Vineri", time: "08:30 – 18:00" },
+      { days: "Sâmbătă", time: "08:30 – 14:00" },
+      { days: "Duminică", time: "Zi liberă" },
     ],
     mapCaption: "Hartă — locația clinicii",
     rights: "Toate drepturile rezervate.",
