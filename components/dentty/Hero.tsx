@@ -27,30 +27,27 @@ export default function Hero() {
         style={{ position: "absolute", inset: 0 }}
       >
         <picture>
-          {/* dedicated mobile hero photo (≤980px) */}
+          {/* dedicated mobile hero photo (≤980px); both are full-bleed cover */}
           <source media="(max-width: 980px)" srcSet="/hero-mobile.webp" />
           <img
-            src="/hero.webp"
+            src="/hero-desktop.webp"
             alt="Dent X"
             decoding="async"
             fetchPriority="high"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              objectPosition: "60% center",
-              display: "block",
-            }}
+            className="hero-fg"
           />
         </picture>
       </div>
       <div
+        className="hero-grad"
         style={{
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
           // strong bottom gradient for the centred bottom text (faces stay
-          // clear), plus a light top wash so the nav reads over the wall
+          // clear), plus a light top wash so the nav reads over the wall.
+          // On mobile this is softened (see globals.css) so it doesn't paint the
+          // letter-boxed blur-fill strip solid black.
           background:
             "linear-gradient(0deg, rgba(12,16,22,0.9) 0%, rgba(12,16,22,0.62) 18%, rgba(12,16,22,0.18) 40%, rgba(12,16,22,0) 60%), linear-gradient(180deg, rgba(12,16,22,0.5) 0%, rgba(12,16,22,0) 20%)",
         }}

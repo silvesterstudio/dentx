@@ -66,15 +66,17 @@ export async function POST(req: Request) {
       `👤 ${name}\n` +
       `📞 ${phone}\n` +
       `🗓 ${when}`;
-    try {
-      await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: TG_CHAT, text }),
-      });
-    } catch (err) {
-      console.error("[booking] Telegram notify failed", err);
-    }
+    // TELEGRAM_CHAT_ID may hold several recipients (comma-separated) — notify each.
+    const chatIds = TG_CHAT.split(",").map((c) => c.trim()).filter(Boolean);
+    await Promise.all(
+      chatIds.map((chat_id) =>
+        fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id, text }),
+        }).catch((err) => console.error(`[booking] Telegram notify failed for ${chat_id}`, err)),
+      ),
+    );
   } else {
     console.warn(
       "[booking] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set — no notification sent (dev mode).",

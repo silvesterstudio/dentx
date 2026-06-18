@@ -37,6 +37,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# large source media (the compressed /public/video-card.mp4 is what ships)
+*.MOV
+*.mov
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

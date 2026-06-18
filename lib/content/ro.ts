@@ -46,32 +46,27 @@ export const ro: Content = {
       {
         name: "Țurcanu Dorel",
         role: "Stomatolog-chirurg · Protezist · Terapeut",
-        bio: "Stomatolog-chirurg cu experiență vastă în implantologie și protetică, tratează fiecare caz cu precizie și calm. Explică pe înțeles fiecare etapă, ca să te simți în siguranță de la prima vizită.",
+        bio: "Stomatolog-chirurg cu experiență vastă în implantologie și protetică. Tratează fiecare caz cu precizie și calm, explicând clar fiecare etapă.",
       },
       {
         name: "Gram Alexandru",
         role: "Stomatolog · Terapeut",
-        bio: "Stomatolog-terapeut atent la detalii, specializat în tratamentul cariei și restaurări estetice. Pune accent pe diagnostic corect și soluții de durată, fără grabă.",
-      },
-      {
-        name: "Cucu Natalia",
-        role: "Stomatolog · Protezist · Terapeut",
-        bio: "Stomatolog-protezist și terapeut, redă zâmbete naturale prin coroane și restaurări de calitate. Lucrează cu materiale moderne pentru un rezultat estetic și confortabil.",
+        bio: "Stomatolog-terapeut atent la detalii, specializat în tratarea cariei și restaurări estetice. Pune accent pe diagnostic corect și soluții durabile.",
       },
       {
         name: "Paralunga Irina",
         role: "Asistentă medicală",
-        bio: "Asistentă medicală care se asigură că fiecare vizită decurge lin și în siguranță. Te însoțește pe tot parcursul tratamentului, cu grijă și răbdare.",
+        bio: "Asistentă medicală care colaborează strâns cu medicii și pregătește instrumentarul steril. Respectă riguros protocoalele de prevenire a infecțiilor.",
       },
       {
         name: "Burența Galina",
         role: "Asistentă medicală",
-        bio: "Asistentă medicală atentă, sprijină echipa la fiecare procedură și se asigură că totul este pregătit pentru tine. Respectă riguros toate normele de sterilizare și igienă, pentru un mediu sigur și primitor.",
+        bio: "Respectă măsurile de precauție la fiecare etapă a îngrijirii și asigură dezinfecția aparaturii. Te însoțește pe tot parcursul tratamentului, cu grijă.",
       },
       {
         name: "Țurcanu Lidia",
-        role: "Director administrativ",
-        bio: "Director administrativ, coordonează activitatea clinicii și te ajută cu programările. Găsește mereu cea mai potrivită oră pentru tine și răspunde la întrebări.",
+        role: "Directoare administrativă",
+        bio: "Coordonează procesele clinicii, veghind asupra siguranței și calității. Transformă calitatea serviciilor stomatologice într-o cultură de zi cu zi.",
       },
     ],
   },
@@ -227,7 +222,7 @@ export const ro: Content = {
         testimonial: {
           quote:
             "Dantura mea era uzată și deteriorată de ani de zile. Prin coroane și fațete, echipa Dent-X mi-a reconstruit complet zâmbetul — rezultatul a depășit așteptările.",
-          author: "Mihai Popescu",
+          author: "Maria Popescu",
         },
       },
       {
@@ -238,7 +233,7 @@ export const ro: Content = {
         testimonial: {
           quote:
             "Dinții din față îmi erau ciobiți și fără culoare. După lucrare arată naturali și luminoși, de parcă nu aș fi avut niciodată o problemă.",
-          author: "Sergiu Vrabie",
+          author: "Cristina Vrabie",
         },
       },
       {
@@ -260,7 +255,7 @@ export const ro: Content = {
         testimonial: {
           quote:
             "Rămăsesem complet fără dinți și nu mai puteam mânca normal. După reabilitarea totală am o dantură fixă și stabilă — am o viață nouă.",
-          author: "Gheorghe Rusu",
+          author: "Ana Rusu",
         },
       },
     ],

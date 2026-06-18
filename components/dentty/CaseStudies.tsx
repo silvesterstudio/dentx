@@ -385,7 +385,7 @@ export default function CaseStudies() {
             strong through the upper-middle (where the testimonials reveal), eased a
             little lower so the footage breathes, dark again at the bottom for the
             before/after card. */}
-        <div className="ov-grad" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,11,16,0.82) 0%, rgba(8,11,16,0.74) 28%, rgba(8,11,16,0.66) 50%, rgba(8,11,16,0.5) 68%, rgba(8,11,16,0.42) 80%, rgba(8,11,16,0.68) 100%)" }} />
+        <div className="ov-grad" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,11,16,0.72) 0%, rgba(8,11,16,0.64) 28%, rgba(8,11,16,0.56) 50%, rgba(8,11,16,0.4) 68%, rgba(8,11,16,0.32) 80%, rgba(8,11,16,0.58) 100%)" }} />
 
         {/* one testimonial (left) + one card (right) per case, stacked */}
         {cases.map((c, i) => {

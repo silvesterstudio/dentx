@@ -6,13 +6,13 @@ import { useContent } from "./LanguageProvider";
 // Filenames are ASCII-only on purpose: a non-Latin1 char (the "Ț", U+021A=538) in
 // an image URL makes Next throw "Cannot convert argument to a ByteString" when it
 // builds the resource header, 500-ing the page (which killed the video expand).
+// One {desktop, mobile} pair per member — order matches t.team.members.
 const PHOTOS = [
-  "/Turcanu-Dorel.webp",
-  "/G. Aleandru.webp",
-  "/C. Natalia.webp",
-  "/P. Irina.webp",
-  "/B.Galina.webp",
-  "/Turcanu-Lidia.webp",
+  { desktop: "/team-dorel-desktop.webp", mobile: "/team-dorel-mobile.webp" },
+  { desktop: "/team-alexandru-desktop.webp", mobile: "/team-alexandru-mobile.webp" },
+  { desktop: "/team-irina-desktop.webp", mobile: "/team-irina-mobile.webp" },
+  { desktop: "/team-galina-desktop.webp", mobile: "/team-galina-mobile.webp" },
+  { desktop: "/team-lidia-desktop.webp", mobile: "/team-lidia-mobile.webp" },
 ];
 
 // Vertical scroll (svh) spent per member transition while the team is pinned.
@@ -189,19 +189,23 @@ export default function Team() {
                       background: "#e9e9e9",
                     }}
                   >
-                    <img
-                      src={PHOTOS[i]}
-                      alt={m.name}
-                      decoding="async"
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        objectPosition: "center top",
-                      }}
-                    />
+                    <picture>
+                      {/* dedicated mobile crop (≤980px) for the merged overlay card */}
+                      <source media="(max-width: 980px)" srcSet={PHOTOS[i].mobile} />
+                      <img
+                        src={PHOTOS[i].desktop}
+                        alt={m.name}
+                        decoding="async"
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          objectPosition: "center top",
+                        }}
+                      />
+                    </picture>
                   </div>
 
                   {/* info card */}
