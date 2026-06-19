@@ -251,7 +251,10 @@ export default function CaseStudies() {
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [mounted]);
+    // `t` is a dep so that on a language switch the effect re-resolves the
+    // overlay's word/quote/card nodes (their text — and word count — changed) and
+    // re-applies the scroll-driven opacities; otherwise the new text stays hidden.
+  }, [mounted, t]);
 
   return (
     <>
@@ -327,7 +330,7 @@ export default function CaseStudies() {
             }}
           >
             {cases.map((c, i) => (
-              <figure key={c.title} style={{ margin: "0 0 clamp(40px, 10vw, 64px)" }}>
+              <figure key={i} style={{ margin: "0 0 clamp(40px, 10vw, 64px)" }}>
                 <BeforeAfterStack c={c} t={t} variant="solid" before={`/${i + 1}-before.webp`} after={`/${i + 1}-after.webp`} />
                 <span style={{ display: "inline-block", marginTop: 18, background: "rgba(40,50,63,0.08)", color: "#28323f", fontSize: 12, fontWeight: 600, padding: "5px 11px", borderRadius: 999 }}>
                   {c.title}
@@ -391,7 +394,7 @@ export default function CaseStudies() {
         {cases.map((c, i) => {
           const words = c.testimonial.quote.split(" ");
           return (
-            <div key={c.title}>
+            <div key={i}>
               <div
                 className="ov-quote-block"
                 style={{

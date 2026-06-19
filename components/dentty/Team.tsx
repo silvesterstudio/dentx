@@ -158,7 +158,7 @@ export default function Team() {
           >
             {members.map((m, i) => (
               <div
-                key={m.name}
+                key={i}
                 className="team-panel"
                 style={{
                   flex: "0 0 100%",

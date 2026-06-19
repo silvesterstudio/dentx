@@ -84,8 +84,8 @@ export default function Contact() {
           <div className="reveal" style={{ transitionDelay: "0.21s" }}>
             <div style={LABEL}>{t.contact.hoursLabel}</div>
             <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-              {t.contact.hours.map((h) => (
-                <div key={h.days} style={{ display: "flex", justifyContent: "space-between", gap: 18, color: "rgba(251,251,251,0.82)", fontSize: 14 }}>
+              {t.contact.hours.map((h, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 18, color: "rgba(251,251,251,0.82)", fontSize: 14 }}>
                   <span>{h.days}</span>
                   <span style={{ color: "rgba(251,251,251,0.55)" }}>{h.time}</span>
                 </div>

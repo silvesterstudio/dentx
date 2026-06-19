@@ -48,7 +48,7 @@ export default function Reviews() {
         >
           {t.reviews.items.map((r, i) => (
             <article
-              key={r.name}
+              key={i}
               className="reveal"
               style={{
                 position: "relative",

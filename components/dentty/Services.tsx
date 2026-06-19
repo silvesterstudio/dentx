@@ -96,7 +96,7 @@ export default function Services() {
           {/* service cards */}
           {t.services.items.map((item, i) => (
             <div
-              key={item.name}
+              key={i}
               className="svc-card reveal"
               data-svc={i}
               onClick={() => setOpenIdx(i)}
