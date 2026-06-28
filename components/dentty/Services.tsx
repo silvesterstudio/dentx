@@ -111,7 +111,7 @@ export default function Services() {
                 cursor: "pointer",
               }}
             >
-              <ImageSlot src={`/${i + 1}.PNG`} caption={item.name} shape="rect" dark showLabel={false} />
+              <ImageSlot src={`/${i + 1}.webp`} caption={item.name} shape="rect" dark showLabel={false} />
               <div
                 style={{
                   position: "absolute",

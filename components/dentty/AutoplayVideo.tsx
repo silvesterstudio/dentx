@@ -39,11 +39,21 @@ export default function AutoplayVideo({ src, ...rest }: Props) {
     // play() as it APPROACHES the viewport — the wide rootMargin fires it well
     // before the user scrolls it into view ("predict the start"), so the clip is
     // already running by the time Servicii lands. No tap required.
+    // Also PAUSE the clip once it's well clear of the viewport (or hidden via
+    // display:none — a display:none element reports isIntersecting:false). The
+    // Cazuri overlay renders a SECOND copy of this same video that sits hidden
+    // ~95% of the time; left playing it kept a whole extra decoder running every
+    // frame while scrolling the rest of the page, which fed the scroll lag. The
+    // wide 60% rootMargin still resumes it well before it's ever seen, so the
+    // pause is invisible — the clip is always running by the time it's on screen.
     let io: IntersectionObserver | null = null;
     if (typeof IntersectionObserver !== "undefined") {
       io = new IntersectionObserver(
         (entries) => {
-          for (const e of entries) if (e.isIntersecting) tryPlay();
+          for (const e of entries) {
+            if (e.isIntersecting) tryPlay();
+            else if (!v.paused) v.pause();
+          }
         },
         { rootMargin: "60% 0px 60% 0px", threshold: 0.01 },
       );
