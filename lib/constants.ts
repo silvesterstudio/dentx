@@ -3,6 +3,22 @@ export const CLINIC_LEGAL = "SRL „Dent X Tur”";
 export const CLINIC_FOUNDED_YEAR = 2021;
 export const CLINIC_EMAIL = "dentx.md@gmail.com";
 
+// Public site origin (no trailing slash) — used as the SEO metadataBase, in the
+// sitemap, robots and structured data. Override with NEXT_PUBLIC_SITE_URL once a
+// custom domain is connected.
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL || "https://dentx-rho.vercel.app"
+).replace(/\/$/, "");
+
+// Clinic location (street/city + map coordinates) for LocalBusiness structured data.
+export const CLINIC_ADDRESS = {
+  street: "str. Mircea cel Bătrîn 14",
+  city: "Chișinău",
+  country: "MD", // Moldova
+  lat: 47.045672,
+  lng: 28.888667,
+} as const;
+
 export type Phone = { display: string; e164: string };
 
 // Reception number — reachable on WhatsApp + Viber.

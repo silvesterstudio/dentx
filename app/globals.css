@@ -619,6 +619,22 @@ html.js-reveal .reveal-img.in-view {
     aspect-ratio: 1 / 1 !important;
     min-height: 0 !important;
   }
+  /* MINIMAL reveal for the Servicii bento on mobile: the desktop `.reveal` does a
+     34px rise + 0.9s ease, STAGGERED per card via an inline transition-delay
+     (svc cards `0.05 + i*0.06s`, video tile a separate `0.5s`). On mobile that
+     stagger looked janky on fast scroll and the video tile popped in out of sync
+     with the others. Here every bento card just does ONE quick uniform fade — no
+     rise, no per-card delay — so they settle together regardless of scroll speed. */
+  #services-grid .svc-card.reveal,
+  #services-grid #quote-tile.reveal,
+  #quote-tile.reveal {
+    transition: opacity 0.4s ease !important;
+    transition-delay: 0s !important;
+  }
+  html.js-reveal #services-grid .svc-card.reveal,
+  html.js-reveal #quote-tile.reveal {
+    transform: none !important; /* no rise — fade only */
+  }
 
   /* Cazuri conveyor: stack the title / testimonial / before-after card
      vertically instead of the desktop's left-quote + right-card columns, so the
