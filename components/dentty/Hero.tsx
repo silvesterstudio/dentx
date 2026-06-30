@@ -31,7 +31,7 @@ export default function Hero() {
           <source media="(max-width: 980px)" srcSet="/hero-mobile.webp" />
           <img
             src="/hero-desktop.webp"
-            alt="Dent X"
+            alt="Clinică stomatologică Dent X în Chișinău"
             decoding="async"
             fetchPriority="high"
             className="hero-fg"

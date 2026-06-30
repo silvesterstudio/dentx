@@ -30,6 +30,14 @@ export function clinicJsonLd() {
     priceRange: "$$",
     currenciesAccepted: "MDL",
     medicalSpecialty: "Dentistry",
+    // Reflects the clinic's real Google rating (shown in the Recenzii section).
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.9",
+      reviewCount: 300,
+      bestRating: 5,
+      worstRating: 1,
+    },
     address: {
       "@type": "PostalAddress",
       streetAddress: CLINIC_ADDRESS.street,

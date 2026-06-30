@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Playfair_Display } from "next/font/google";
 import { dictionaries } from "@/lib/content";
 import { LanguageProvider } from "@/components/dentty/LanguageProvider";
@@ -75,6 +75,10 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1d242b",
 };
 
 export default function RootLayout({
