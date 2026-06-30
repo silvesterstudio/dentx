@@ -90,17 +90,22 @@ export default function CaseStudies() {
       // release the mobile fixed-position pin (the stage returns to normal flow).
       // removeProperty so the !important-priority inline values set on pin-enter are
       // fully cleared (falling back to the static-flow CSS).
-      const stage = document.getElementById("services-stage");
-      if (stage) {
-        stage.style.removeProperty("position");
-        stage.style.removeProperty("left");
-        stage.style.removeProperty("right");
-        stage.style.removeProperty("bottom");
-        stage.style.removeProperty("top");
-        stage.style.removeProperty("width");
+      // MOBILE-ONLY: on DESKTOP the stage's position:sticky/top/height and #services'
+      // height are React INLINE styles (Services.tsx) — clearing them here would
+      // strip the desktop pin (React won't re-apply, so the expand would never run).
+      if (mq.matches) {
+        const stage = document.getElementById("services-stage");
+        if (stage) {
+          stage.style.removeProperty("position");
+          stage.style.removeProperty("left");
+          stage.style.removeProperty("right");
+          stage.style.removeProperty("bottom");
+          stage.style.removeProperty("top");
+          stage.style.removeProperty("width");
+        }
+        const svc = document.getElementById("services");
+        if (svc) svc.style.removeProperty("height"); // drop the height lock taken on pin-enter
       }
-      const svc = document.getElementById("services");
-      if (svc) svc.style.removeProperty("height"); // drop the height lock taken on pin-enter
       if (backdropRef.current) backdropRef.current.style.opacity = "0";
       ovCaption?.classList.remove("play");
       ovCards.forEach((c) => {
