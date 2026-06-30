@@ -198,10 +198,13 @@ export default function Services() {
               transitionDelay: "0.5s",
             }}
           >
+            {/* Preview is STATIC (controlled = never auto-plays) — it shows the
+                poster still. The clip only ever plays once it has expanded to
+                fullscreen (see CaseStudies). So no video decodes in the bento or
+                during the morph — only when it's the full-screen feature. */}
             <AutoplayVideo
               className="qt-video"
-              autoPlay
-              loop
+              controlled
               poster="/clinic-office.webp"
               src="/video-card.mp4"
               style={{

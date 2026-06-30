@@ -53,6 +53,7 @@ export default function CaseStudies() {
     // and thus this whole update — every animation frame).
     const overlay = overlayRef.current;
     if (!overlay) return;
+    const ovVideo = overlay.querySelector<HTMLVideoElement>("video");
     const ovCaption = overlay.querySelector<HTMLElement>(".ov-caption");
     const ovGrad = overlay.querySelector<HTMLElement>(".ov-grad");
     const ovCards = Array.from(overlay.querySelectorAll<HTMLElement>(".ov-ba-card"));
@@ -71,11 +72,35 @@ export default function CaseStudies() {
     // only ONCE on the active→inactive transition instead of on every one of
     // those frames (a meaningful saving on mobile, where Echipa scrolled janky).
     let settledInactive = false;
+    // Same idea for the CONVEYOR: while the video is still expanding (or has just
+    // landed) NO case card is on screen yet, but the per-card loop below still
+    // re-wrote every card's transform AND every testimonial word's opacity on
+    // every scroll frame. That ~50-writes-per-frame churn during the expand was a
+    // big part of the MOBILE lag in exactly the phase the user feels it. This flag
+    // parks the cards hidden ONCE and skips the loop until the conveyor begins.
+    let conveyorIdle = false;
     const reset = (tile: HTMLElement) => {
       if (settledInactive) return;
       settledInactive = true;
+      conveyorIdle = false;
+      ovVideo?.pause(); // back to a still frame when the overlay isn't in play
       overlay.style.display = "none";
+      overlay.style.clipPath = "";
       tile.style.visibility = "";
+      // release the mobile fixed-position pin (the stage returns to normal flow).
+      // removeProperty so the !important-priority inline values set on pin-enter are
+      // fully cleared (falling back to the static-flow CSS).
+      const stage = document.getElementById("services-stage");
+      if (stage) {
+        stage.style.removeProperty("position");
+        stage.style.removeProperty("left");
+        stage.style.removeProperty("right");
+        stage.style.removeProperty("bottom");
+        stage.style.removeProperty("top");
+        stage.style.removeProperty("width");
+      }
+      const svc = document.getElementById("services");
+      if (svc) svc.style.removeProperty("height"); // drop the height lock taken on pin-enter
       if (backdropRef.current) backdropRef.current.style.opacity = "0";
       ovCaption?.classList.remove("play");
       ovCards.forEach((c) => {
@@ -95,22 +120,30 @@ export default function CaseStudies() {
       // would push the card's right edge (and its rounded corner) under the
       // scrollbar so the right corner looks clipped vs the left.
       const vw = document.documentElement.clientWidth || window.innerWidth || 1;
-      const qr = tile.getBoundingClientRect();
-
       // scroll0 = how far we've scrolled INTO the expand; expandDist = its length.
-      // DESKTOP: the Servicii inner stage is PINNED, so we measure from the section
-      // top over the pinned region. MOBILE: the square-card bento SCROLLS, so we
-      // measure the video tile's OWN rect (expand begins once it's fully in view).
+      // DESKTOP: the whole bento fits one screen and the inner stage is PINNED at
+      // the TOP (CSS sticky top:0, section = 100svh + PIN_VH) — measure from the
+      // section top over the pinned region.
+      // MOBILE: the bento is a TALLER-than-screen scrollable grid of square cards.
+      // It scrolls normally until its BOTTOM reaches the bottom of the screen (you
+      // hit the END of the cards); then the stage PINS so the video can expand over
+      // a frozen bento. CSS `position:sticky` CANNOT do this — a sticky element
+      // taller than the viewport never sticks (verified). So we pin manually with
+      // `position:fixed` (compositor-driven, no per-frame JS, so NO rubber-band lag
+      // like the earlier translateY had), locking #services' height first so taking
+      // the stage out of flow doesn't collapse the page. We track the pin window
+      // from the section's BOTTOM edge — #services has padding-bottom = ROOM.
+      const mobileStage = document.getElementById("services-stage");
+      const sr = services.getBoundingClientRect();
       let scroll0: number;
       let expandDist: number;
       let wantActive: boolean;
       if (mq.matches) {
-        const off = vh - qr.height - qr.top;
-        scroll0 = Math.max(0, off);
-        expandDist = Math.max(1, 0.9 * vh); // expand over ~one screen of scroll
-        wantActive = off > 0;
+        const ROOM = 0.8 * vh; // must match #services padding-bottom (80svh)
+        scroll0 = Math.max(0, vh + ROOM - sr.bottom);
+        expandDist = Math.max(1, ROOM);
+        wantActive = scroll0 > 0;
       } else {
-        const sr = services.getBoundingClientRect();
         scroll0 = Math.max(0, -sr.top);
         expandDist = Math.max(1, sr.height - vh);
         wantActive = sr.top <= 0.5 * vh;
@@ -121,13 +154,49 @@ export default function CaseStudies() {
       }
       // active again — re-arm reset() so it fires once when we next go inactive
       settledInactive = false;
+
+      // MOBILE PIN: the instant we enter the window (bento bottom at screen bottom),
+      // FREEZE the stage at the viewport bottom with position:fixed. Lock the
+      // section height first so removing the stage from flow doesn't shift the page.
+      // Once fixed the browser keeps it frozen on the compositor — the bento stays
+      // rock-still while the rest of the page scrolls and the video expands.
+      // NOTE: the mobile CSS sets `#services-stage{position:static!important}` and
+      // `#services{height:auto!important}` (to beat the desktop inline styles), so
+      // these MUST be written with `important` priority or the !important CSS wins
+      // and the stage never actually pins.
+      if (mq.matches && mobileStage && mobileStage.style.position !== "fixed") {
+        services.style.setProperty("height", services.offsetHeight + "px", "important");
+        mobileStage.style.setProperty("position", "fixed", "important");
+        mobileStage.style.setProperty("left", "0", "important");
+        mobileStage.style.setProperty("right", "0", "important");
+        mobileStage.style.setProperty("bottom", "0", "important");
+        mobileStage.style.setProperty("top", "auto", "important");
+        mobileStage.style.setProperty("width", "100%", "important");
+      }
+
       const p = clamp01(scroll0 / expandDist);
 
-      // MOBILE: fade in the dark backdrop as the video grows so the white grid
-      // padding below the expanding video reads as a cinematic dark stage.
-      if (backdropRef.current) {
-        const bo = mq.matches && p < 0.999 ? clamp01(p * 4) : 0;
-        backdropRef.current.style.opacity = bo.toFixed(3);
+      // The tile is held in place by the pin, so its rect already gives the FROZEN
+      // on-screen position the overlay expands from.
+      const qr = tile.getBoundingClientRect();
+
+      // No dark backdrop needed: the bento PINS on both widths now, so the video
+      // expands OVER the frozen bento (just like desktop) — no white gaps to hide.
+      if (backdropRef.current) backdropRef.current.style.opacity = "0";
+
+      // The clip stays a still frame in the bento tile (p≈0), then PLAYS as soon as
+      // it begins expanding — the user wants the footage already running while the
+      // card is mid-expand (it continues from the still it was paused on), not only
+      // once it's fullscreen. It keeps playing through the conveyor + lift.
+      if (ovVideo) {
+        if (p >= 0.06) {
+          if (ovVideo.paused) {
+            const pr = ovVideo.play();
+            if (pr && typeof pr.catch === "function") pr.catch(() => {});
+          }
+        } else if (!ovVideo.paused) {
+          ovVideo.pause();
+        }
       }
 
       // End-of-Cazuri → Contact hand-off (BOTH widths reveal Contact, which sits
@@ -138,8 +207,8 @@ export default function CaseStudies() {
       const lift = Math.min(0, contactTop - vh); // 0 → -vh as Contact rises in
       const liftP = clamp01((vh - contactTop) / vh);
 
-      // expand from the tile rect → fullscreen by p (mobile anchors at the bottom).
-      const srcTop = mq.matches ? vh - qr.height : qr.top;
+      // expand from the tile's own (pinned) rect → fullscreen by p, on both widths.
+      const srcTop = qr.top;
       tile.style.visibility = "hidden";
       overlay.style.display = "block";
       overlay.style.left = lerp(qr.left, 0, p) + "px";
@@ -167,6 +236,10 @@ export default function CaseStudies() {
         overlay.style.borderBottomLeftRadius = "";
         overlay.style.borderBottomRightRadius = "";
         overlay.style.opacity = "";
+        // A PLAYING <video> renders on a hardware layer that ignores border-radius +
+        // overflow:hidden on mobile, so its corners stayed SHARP during the expand.
+        // clip-path clips composited layers too — round all four corners by `er`.
+        overlay.style.clipPath = `inset(0 round ${er.toFixed(1)}px)`;
       } else {
         // DESKTOP: lift via top + the "peel up" shrink/round/shadow/fade flourish
         // (corners + shrink share the same normalised lift progress).
@@ -175,6 +248,9 @@ export default function CaseStudies() {
         const r = Math.max(er, 44 * lp).toFixed(1) + "px";
         overlay.style.borderBottomLeftRadius = r;
         overlay.style.borderBottomRightRadius = r;
+        // clip-path so the playing video is actually clipped to the corners (top
+        // corners = er, bottom corners = the bigger peel radius r).
+        overlay.style.clipPath = `inset(0 round ${er.toFixed(1)}px ${er.toFixed(1)}px ${r} ${r})`;
         overlay.style.boxShadow =
           liftP > 0.01 ? `inset 0 0 0 1.5px rgba(255,255,255,${(0.4 * lp).toFixed(2)})` : "";
         overlay.style.transform = `scale(${(1 - 0.05 * lp).toFixed(4)})`;
@@ -207,6 +283,25 @@ export default function CaseStudies() {
       const stride = move + hold; // next case starts as this one begins exiting
       const cards = ovCards;
       const n = cards.length;
+      // Conveyor hasn't started yet (still expanding) — park everything hidden
+      // ONCE and skip the per-frame card/word writes. This is the key mobile fix
+      // for the "video card transition is laggy" phase.
+      if (past <= 0) {
+        if (!conveyorIdle) {
+          conveyorIdle = true;
+          for (let k = 0; k < n; k++) {
+            cards[k].style.transform = "translateY(140%)";
+            cards[k].style.opacity = "0";
+            const data = ovBlockData[k];
+            if (!data) continue;
+            data.block.style.opacity = "0";
+            data.words.forEach((w) => (w.style.opacity = "0"));
+            if (data.author) data.author.style.opacity = "0";
+          }
+        }
+        return;
+      }
+      conveyorIdle = false;
       for (let k = 0; k < n; k++) {
         const isLast = k === n - 1;
         const localK = past - (titleHold + k * stride);
@@ -381,7 +476,7 @@ export default function CaseStudies() {
           pointerEvents: "none",
         }}
       >
-        <AutoplayVideo autoPlay loop poster="/clinic-office.webp" src="/video-card.mp4" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        <AutoplayVideo controlled loop poster="/clinic-office.webp" preload="auto" src="/video-card.mp4" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
         {/* ONE black gradient over the whole clip — dark enough that ALL the white
             text (title + testimonials) reads white wherever it sits, instead of
             per-text dark blocks behind each one. Darkest at the top (title), still

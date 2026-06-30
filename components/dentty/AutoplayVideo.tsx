@@ -17,15 +17,24 @@ import type { VideoHTMLAttributes } from "react";
  */
 type Props = Omit<VideoHTMLAttributes<HTMLVideoElement>, "muted" | "children"> & {
   src: string;
+  /**
+   * When set, this component does NOT auto-play or observe — the PARENT drives
+   * play()/pause() (used by the Cazuri overlay clone, which stays paused on a
+   * still frame during the expand and only plays once fullscreen, so no video is
+   * decoded during the laggy morph). We still force `muted` so the parent's
+   * later play() is allowed by mobile autoplay policy.
+   */
+  controlled?: boolean;
 };
 
-export default function AutoplayVideo({ src, ...rest }: Props) {
+export default function AutoplayVideo({ src, controlled, ...rest }: Props) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
     v.muted = true; // the property, not just the attribute — required for autoplay
+    if (controlled) return; // parent owns play/pause for this instance
     const tryPlay = () => {
       const p = v.play();
       if (p && typeof p.catch === "function") p.catch(() => {});
@@ -64,7 +73,7 @@ export default function AutoplayVideo({ src, ...rest }: Props) {
       v.removeEventListener("loadeddata", tryPlay);
       io?.disconnect();
     };
-  }, []);
+  }, [controlled]);
 
   return (
     <video ref={ref} {...rest} muted playsInline>

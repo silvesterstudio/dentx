@@ -245,6 +245,11 @@ html.js-reveal .reveal-img.in-view {
   transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  /* the translateZ promotes the video to its own layer, which ESCAPES the
+     overlay's border-radius + overflow:hidden clip (composited children aren't
+     clipped by an ancestor's rounded corners) — so mid-expand the video showed
+     SHARP corners. Inheriting the radius rounds the video layer itself to match. */
+  border-radius: inherit;
 }
 #quote-tile,
 #cazuri-overlay {
@@ -556,17 +561,24 @@ html.js-reveal .reveal-img.in-view {
     color: rgba(251, 251, 251, 0.85) !important;
   }
 
-  /* Servicii on mobile: a SCROLLABLE bento of SQUARE cards. The video tile is the
-     last (square) card — once it scrolls fully into view it expands to fullscreen
-     (CaseStudies overlay) and the Cazuri conveyor plays. The grid's padding-bottom
-     is the pin/expand scroll room. */
+  /* Servicii on mobile: a SCROLLABLE 2-col bento of SQUARE cards (taller than the
+     screen — you scroll through every service). When you reach the END of the cards
+     (the bento's bottom hits the screen bottom) the stage PINS so the video card can
+     expand over a frozen bento, like desktop's "stop, then expand". The pin is done
+     in JS with position:fixed (see CaseStudies) — CSS position:sticky CANNOT pin an
+     element taller than the viewport. So here the stage is a normal in-flow block;
+     #services is height:auto with padding-bottom = the pin/expand scroll room.
+     overflow:visible so the cards above the pinned screenful aren't clipped. */
   #services {
     height: auto !important;
+    padding-bottom: 80svh !important; /* ROOM the pinned expand scrubs over (must match CaseStudies) */
   }
   #services-stage {
     position: static !important;
+    top: auto !important;
     height: auto !important;
     overflow: visible !important;
+    padding: clamp(86px, 12vh, 118px) clamp(14px, 4vw, 24px) clamp(40px, 9vh, 80px) !important;
   }
   #services-grid {
     grid-template-columns: 1fr 1fr !important;
@@ -574,7 +586,6 @@ html.js-reveal .reveal-img.in-view {
     grid-auto-rows: auto !important;
     grid-auto-flow: row !important;
     gap: clamp(8px, 2.5vw, 12px) !important;
-    padding-bottom: 90svh !important;
   }
   /* Contact fills the screen so the video can lift fully off and reveal it
      completely (no leftover video strip) as the last section. 100vh = the large
@@ -588,9 +599,9 @@ html.js-reveal .reveal-img.in-view {
     grid-row: auto !important;
     align-self: start !important;
     margin: 0 0 clamp(4px, 1.5vw, 8px) !important;
-    font-size: clamp(40px, 11vw, 60px) !important;
+    font-size: clamp(36px, 10vw, 56px) !important;
   }
-  /* every service card is square */
+  /* every service card is a square — all corners visible, names readable */
   #services-grid .svc-card {
     grid-column: auto !important;
     grid-row: auto !important;
@@ -600,11 +611,8 @@ html.js-reveal .reveal-img.in-view {
   #services-grid .svc-desc {
     display: none !important;
   }
-  /* video tile — the LAST bento card, a SQUARE like every other card so it sits
-     neatly beside the final service instead of a mismatched full-width banner.
-     It scrolls in naturally; once it's fully in view it grows to fullscreen
-     (CaseStudies fixed overlay) and the dark backdrop ramps in fast, so the
-     cards scrolling behind read as a frozen stage. */
+  /* video tile — the LAST square card in the 2-col bento (bottom-right). Once you
+     scroll to it (end of cards) the stage pins and it expands to fullscreen. */
   #quote-tile {
     grid-column: auto !important;
     grid-row: auto !important;
@@ -653,5 +661,17 @@ html.js-reveal .reveal-img.in-view {
   /* the seam node points RIGHT (before → after) between the side-by-side photos */
   .ov-ba-card .ba-node {
     transform: translate(-50%, -50%) rotate(-90deg) !important;
+  }
+
+  /* Mobile perf: drop the glass blur on the conveyor cards + their labels. An
+     animated backdrop-filter blur over a playing video is one of the most
+     expensive things a mobile GPU can do per frame — it was a big contributor to
+     the Servicii/Cazuri scroll lag. The cards keep their dark translucent fill,
+     so at phone size (where the blur was barely visible anyway) the look holds;
+     desktop keeps the full glass. */
+  .ov-ba-card .ba-stack,
+  .ov-ba-card .ba-imgwrap span {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }
