@@ -12,6 +12,7 @@ const CALL_HREF = `tel:${CLINIC_TEL}`;
 const NAV = [
   { key: "home", href: "#home" },
   { key: "about", href: "#clinic" },
+  { key: "faq", href: "#faq" },
   { key: "services", href: "#services" },
   { key: "cases", href: "#cases" },
   { key: "contact", href: "#contact" },

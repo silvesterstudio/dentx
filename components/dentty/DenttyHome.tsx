@@ -154,6 +154,11 @@ export default function DenttyHome() {
       <Header showScrim={showScrim} />
       <Hero />
       <MainSection />
+      {/* FAQ sits in the NON-sticky light flow between Clinica (#main, which scrolls
+          up and out) and the Team sweep. This zone touches none of the loved sticky
+          effects (Team sweep, Servicii slide-over, the Cazuri→Contact video lift) nor
+          the cover-blur pairs (home←main, team←work), and stays seamlessly white. */}
+      <Faq />
       {/* Sticky-proof marker: tracks scroll into the team's pinned sweep. */}
       <div id="team-sentinel" aria-hidden style={{ height: 0 }} />
       <Team />
@@ -171,10 +176,6 @@ export default function DenttyHome() {
           video. At the end of the cases, the fixed video card LIFTS up (tracked
           in CaseStudies) to reveal Contact underneath — it does NOT slide over. */}
       <Contact />
-      {/* FAQ — a normal light section AFTER Contact. It must sit after Contact (not
-          before) so the fixed Cazuri video overlay, which lifts to reveal Contact,
-          never covers it. Adds FAQPage structured data via the page components. */}
-      <Faq />
     </div>
   );
 }

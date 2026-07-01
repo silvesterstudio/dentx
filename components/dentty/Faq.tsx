@@ -17,11 +17,14 @@ export default function Faq() {
       id="faq"
       data-screen-label="FAQ"
       style={{
+        // z2 to match #main — FAQ lives in the non-sticky light flow between
+        // Clinica (#main, z2) and Team (#team, z3); it scrolls normally, so this
+        // just keeps it in the same white band without covering the team layer.
         position: "relative",
-        zIndex: 5,
+        zIndex: 2,
         background: "#fbfbfb",
         boxSizing: "border-box",
-        padding: "clamp(56px, 7vw, 104px) clamp(20px, 2.4vw, 44px)",
+        padding: "clamp(64px, 8vw, 120px) clamp(20px, 2.4vw, 44px)",
       }}
     >
       <div style={{ maxWidth: 900, margin: "0 auto", width: "100%" }}>

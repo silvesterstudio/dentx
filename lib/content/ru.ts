@@ -12,6 +12,7 @@ export const ru: Content = {
     services: "Услуги",
     cases: "Работы",
     reviews: "Отзывы",
+    faq: "Вопросы",
     contact: "Контакты",
   },
   common: {

@@ -8,6 +8,7 @@ export type Content = {
     services: string;
     cases: string;
     reviews: string;
+    faq: string;
     contact: string;
   };
   common: { callNow: string; book: string; viewMore: string };

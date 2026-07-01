@@ -12,6 +12,7 @@ export const ro: Content = {
     services: "Servicii",
     cases: "Lucrări",
     reviews: "Recenzii",
+    faq: "Întrebări",
     contact: "Contacte",
   },
   common: {
