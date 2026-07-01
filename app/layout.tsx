@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Playfair_Display } from "next/font/google";
 import { dictionaries } from "@/lib/content";
-import { LanguageProvider } from "@/components/dentty/LanguageProvider";
 import { SITE_URL, CLINIC_NAME } from "@/lib/constants";
 import { clinicJsonLd } from "@/lib/seo";
 import "./globals.css";
@@ -47,7 +46,7 @@ export const metadata: Metadata = {
     canonical: "/",
     languages: {
       "ro-MD": "/",
-      "ru-MD": "/",
+      "ru-MD": "/ru",
     },
   },
   openGraph: {
@@ -97,7 +96,9 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(clinicJsonLd()) }}
         />
-        <LanguageProvider>{children}</LanguageProvider>
+        {/* LanguageProvider is mounted per-ROUTE (app/page = ro, app/ru/page = ru)
+            so each language is server-rendered at its own URL for SEO. */}
+        {children}
       </body>
     </html>
   );

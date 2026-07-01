@@ -10,6 +10,7 @@ import Team from "./Team";
 import Services from "./Services";
 import CaseStudies from "./CaseStudies";
 import Contact from "./Contact";
+import Faq from "./Faq";
 
 // Scroll-driven cover-blur: as a section is covered by the next one rising over
 // it, the outgoing section blurs in proportion to how far it's been covered.
@@ -170,6 +171,10 @@ export default function DenttyHome() {
           video. At the end of the cases, the fixed video card LIFTS up (tracked
           in CaseStudies) to reveal Contact underneath — it does NOT slide over. */}
       <Contact />
+      {/* FAQ — a normal light section AFTER Contact. It must sit after Contact (not
+          before) so the fixed Cazuri video overlay, which lifts to reveal Contact,
+          never covers it. Adds FAQPage structured data via the page components. */}
+      <Faq />
     </div>
   );
 }

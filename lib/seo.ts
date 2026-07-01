@@ -78,3 +78,19 @@ export function clinicJsonLd() {
     ].map((name) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name } })),
   };
 }
+
+/**
+ * schema.org FAQPage — makes the FAQ eligible for the expandable Q&A rich result
+ * in Google. Built from the localized FAQ items so /ru gets Russian Q&A.
+ */
+export function faqJsonLd(items: { q: string; a: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map(({ q, a }) => ({
+      "@type": "Question",
+      name: q,
+      acceptedAnswer: { "@type": "Answer", text: a },
+    })),
+  };
+}

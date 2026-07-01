@@ -89,4 +89,10 @@ export type Content = {
     datePh: string;
     timePh: string;
   };
+  faq: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    items: { q: string; a: string }[];
+  };
 };

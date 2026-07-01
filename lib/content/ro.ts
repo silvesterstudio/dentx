@@ -309,4 +309,39 @@ export const ro: Content = {
     datePh: "Alege data",
     timePh: "Alege ora",
   },
+  faq: {
+    eyebrow: "Întrebări frecvente",
+    title: "Întrebări frecvente",
+    subtitle: "Răspunsuri la cele mai des întâlnite întrebări despre tratamente, programări și prețuri.",
+    items: [
+      {
+        q: "Cât costă o consultație la Dent X?",
+        a: "Prima consultație este gratuită și durează aproximativ 15 minute. Medicul îți examinează dinții, îți explică opțiunile de tratament și îți oferă un plan clar cu prețuri, fără nicio obligație.",
+      },
+      {
+        q: "Cât costă un implant dentar în Chișinău?",
+        a: "Prețul unui implant depinde de sistemul ales și de starea osului. La consultația gratuită îți facem o evaluare exactă și un deviz personalizat. Oferim și soluții de plată eșalonată.",
+      },
+      {
+        q: "Doare procedura de implant sau extracție?",
+        a: "Toate intervențiile se fac sub anestezie locală modernă, așa că nu vei simți durere în timpul procedurii. După tratament îți oferim recomandări clare pentru o recuperare rapidă și confortabilă.",
+      },
+      {
+        q: "Cum mă programez la o vizită?",
+        a: "Ne poți suna la 060 25 00 25, ne poți scrie pe WhatsApp sau Viber, ori poți completa formularul de programare de pe site. Te contactăm pentru a confirma data și ora potrivite pentru tine.",
+      },
+      {
+        q: "Ce servicii stomatologice oferiți?",
+        a: "Oferim gamă completă: stomatologie terapeutică, tratament de canal (endodonție), chirurgie dento-alveolară, implantologie, protetică dentară, stomatologie pentru copii, profilaxie și estetică dentară.",
+      },
+      {
+        q: "Unde se află clinica și care este programul?",
+        a: "Ne găsești pe str. Mircea cel Bătrîn 14, Chișinău. Programul este Luni–Vineri 08:30–18:00 și Sâmbătă 08:30–14:00. Duminica este zi liberă.",
+      },
+      {
+        q: "Tratați și copii?",
+        a: "Da. Avem stomatologie pediatrică cu o abordare blândă și prietenoasă, astfel încât cei mici să se simtă în siguranță și să aibă o experiență pozitivă la dentist.",
+      },
+    ],
+  },
 };
