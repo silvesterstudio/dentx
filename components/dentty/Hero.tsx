@@ -37,6 +37,21 @@ export default function Hero() {
             className="hero-fg"
           />
         </picture>
+        {/* Pre-blurred copy of the hero photo (hero-desktop-blur.webp, generated
+            offline). The desktop cover-blur used to be a live filter: blur() on
+            the whole section — a full-viewport gaussian re-applied by the GPU
+            every scroll frame, which is what lagged the Hero→Clinica hand-off.
+            DenttyHome now just cross-fades THIS layer's opacity (compositor-only)
+            for the same look. No src here: DenttyHome assigns it on ≥980px only,
+            so phones never download the extra image. */}
+        <img
+          id="hero-img-blur"
+          className="hero-fg"
+          alt=""
+          aria-hidden
+          decoding="async"
+          style={{ opacity: 0, willChange: "opacity", pointerEvents: "none" }}
+        />
       </div>
       <div
         className="hero-grad"

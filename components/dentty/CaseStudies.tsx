@@ -379,10 +379,61 @@ export default function CaseStudies() {
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     update();
+
+    // FIRST-EXPAND WARM-UP. The overlay subtree (fullscreen video poster, the
+    // before/after photos, glass cards with backdrop-filter) sits display:none
+    // until the first expand — so the FIRST expand paid image decode + layer
+    // creation + video-decoder init all at once, right in the middle of the
+    // morph (the user reported the expand lags only the first time; the second
+    // run is smooth because every cache is warm by then). Paint it ONCE at
+    // near-zero opacity during idle time and play/pause the video for a frame,
+    // so all that cold work happens invisibly long before Servicii is reached.
+    let warmed = false;
+    const warmUp = () => {
+      if (warmed) return;
+      warmed = true;
+      // already live (deep link straight into the expand) — nothing to warm
+      if (!settledInactive) return;
+      const vw2 = document.documentElement.clientWidth || 1;
+      const vh2 = window.innerHeight || 1;
+      overlay.style.display = "block";
+      overlay.style.opacity = "0.001";
+      overlay.style.left = "0px";
+      overlay.style.top = "0px";
+      overlay.style.width = vw2 + "px";
+      overlay.style.height = vh2 + "px";
+      if (ovVideo) {
+        const pr = ovVideo.play();
+        if (pr && typeof pr.then === "function") {
+          pr.then(() => {
+            if (settledInactive) ovVideo.pause();
+          }).catch(() => {});
+        }
+      }
+      // two frames is enough for decode + first raster, then put it back
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          overlay.style.opacity = "";
+          if (settledInactive) {
+            overlay.style.display = "none";
+            overlay.style.left = "";
+            overlay.style.top = "";
+            overlay.style.width = "";
+            overlay.style.height = "";
+          }
+        }),
+      );
+    };
+    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+    const warmId = ric ? ric(warmUp, { timeout: 4000 }) : window.setTimeout(warmUp, 2500);
+
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
+      const cic = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
+      if (ric && cic) cic(warmId as number);
+      else clearTimeout(warmId as number);
     };
     // `t` is a dep so that on a language switch the effect re-resolves the
     // overlay's word/quote/card nodes (their text — and word count — changed) and

@@ -12,63 +12,57 @@ import CaseStudies from "./CaseStudies";
 import Contact from "./Contact";
 import Faq from "./Faq";
 
-// Scroll-driven cover-blur: as a section is covered by the next one rising over
-// it, the outgoing section blurs in proportion to how far it's been covered.
-const MAX_BLUR = 5; // px at full coverage (was 8 — blur cost scales with radius)
-const FINAL_PROGRESS = 0.8; // cap so it never blurs the section all the way out
+// Scroll-driven cover-blur: as the hero is covered by Clinica rising over it,
+// a PRE-BLURRED copy of the hero photo cross-fades in over the sharp one
+// (#hero-img-blur in Hero.tsx). Opacity on a composited layer is compositor-only
+// work — unlike the old animated filter: blur(), which made the GPU re-run a
+// full-viewport gaussian every scroll frame and lagged the Hero→Clinica scroll.
+const BLUR_SRC = "/hero-desktop-blur.webp";
+const FINAL_PROGRESS = 0.8; // cap so it never blurs the hero all the way out
 
 // The header scrim appears once the white panel reaches the top.
 const SCRIM_AT = 40; // px: show scrim when #main top is at/above this line
 
 /**
  * Sticky-stack reveal + cover-blur + header scrim. The reveal itself is pure
- * CSS (sticky + z-index). On scroll we (a) blur each outgoing section as its
- * successor covers it and (b) toggle the fixed header's scrim. Coverage is read
- * from the COVERING section (#main, #work — both position:relative, so their
- * getBoundingClientRect is accurate, unlike the sticky outgoing ones). The blur
- * is skipped below 980px.
+ * CSS (sticky + z-index). On scroll we (a) cross-fade the hero's pre-blurred
+ * photo in as Clinica covers it and (b) toggle the fixed header's scrim.
+ * Coverage is read from the COVERING section (#main — position:relative, so its
+ * getBoundingClientRect is accurate, unlike the sticky hero). The blur is
+ * skipped below 980px.
  */
 export default function DenttyHome() {
   const [showScrim, setShowScrim] = useState(false);
 
   useEffect(() => {
     const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
-    // Cover-blur is a desktop-only flourish — a full-viewport blur() filter is
-    // too expensive to animate per scroll frame on phones (it made mobile
-    // scrolling janky). Below 980px we skip it entirely, as documented.
+    // Cover-blur is a desktop-only flourish — below 980px we skip it entirely
+    // (and never even load the blurred image), as documented.
     const mq = window.matchMedia("(max-width: 980px)");
-    const homeEl = document.getElementById("home");
     const mainEl = document.getElementById("main");
-    // [outgoing section that gets blurred, covering section we measure].
-    // Team→Servicii is now a default scroll (no slide-over), so it's not blurred.
-    const pairs: [HTMLElement | null, HTMLElement | null][] = [
-      [homeEl, mainEl],
-    ];
+    const blurImg = document.getElementById("hero-img-blur") as HTMLImageElement | null;
+    // Assign the blurred image on desktop up front so it's downloaded + decoded
+    // long before the first scroll frame needs to fade it in.
+    if (blurImg && !mq.matches && !blurImg.getAttribute("src")) {
+      blurImg.src = BLUR_SRC;
+    }
 
     let raf = 0;
     const update = () => {
       raf = 0;
       const vh = window.innerHeight || 1;
-      for (const [target, coverer] of pairs) {
-        if (!target) continue;
-        let f = "";
-        if (coverer && !mq.matches) {
-          const cov = clamp01((vh - coverer.getBoundingClientRect().top) / vh);
-          const p = Math.min(cov, FINAL_PROGRESS);
-          // Quantize to 0.5px steps. Each DISTINCT blur radius forces a fresh
-          // full-viewport gaussian rasterization; snapping to coarse steps lets the
-          // browser reuse the cached blur across most frames (near-invisible change,
-          // big win on the Hero→Clinica cover-blur that felt laggy).
-          const px = Math.round(p * MAX_BLUR * 2) / 2;
-          if (px >= 0.5) f = `blur(${px}px)`;
+      const mainTop = mainEl ? mainEl.getBoundingClientRect().top : vh;
+      if (blurImg) {
+        let o = 0;
+        if (!mq.matches) {
+          const cov = clamp01((vh - mainTop) / vh);
+          // quantize so most frames skip the style write entirely
+          o = Math.round(Math.min(cov, FINAL_PROGRESS) * 100) / 100;
         }
-        if (target.style.filter !== f) {
-          target.style.filter = f;
-          // hint the compositor only while actually blurring
-          target.style.willChange = f ? "filter" : "auto";
-        }
+        const s = String(o);
+        if (blurImg.style.opacity !== s) blurImg.style.opacity = s;
       }
-      const scrim = !!mainEl && mainEl.getBoundingClientRect().top <= SCRIM_AT;
+      const scrim = !!mainEl && mainTop <= SCRIM_AT;
       setShowScrim((prev) => (prev === scrim ? prev : scrim));
     };
 
@@ -84,12 +78,7 @@ export default function DenttyHome() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
-      pairs.forEach(([t]) => {
-        if (t) {
-          t.style.filter = "";
-          t.style.willChange = "auto";
-        }
-      });
+      if (blurImg) blurImg.style.opacity = "0";
     };
   }, []);
 
