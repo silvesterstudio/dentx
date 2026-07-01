@@ -14,7 +14,7 @@ import Faq from "./Faq";
 
 // Scroll-driven cover-blur: as a section is covered by the next one rising over
 // it, the outgoing section blurs in proportion to how far it's been covered.
-const MAX_BLUR = 8; // px at full coverage
+const MAX_BLUR = 5; // px at full coverage (was 8 — blur cost scales with radius)
 const FINAL_PROGRESS = 0.8; // cap so it never blurs the section all the way out
 
 // The header scrim appears once the white panel reaches the top.
@@ -55,7 +55,12 @@ export default function DenttyHome() {
         if (coverer && !mq.matches) {
           const cov = clamp01((vh - coverer.getBoundingClientRect().top) / vh);
           const p = Math.min(cov, FINAL_PROGRESS);
-          if (p > 0.001) f = `blur(${(p * MAX_BLUR).toFixed(2)}px)`;
+          // Quantize to 0.5px steps. Each DISTINCT blur radius forces a fresh
+          // full-viewport gaussian rasterization; snapping to coarse steps lets the
+          // browser reuse the cached blur across most frames (near-invisible change,
+          // big win on the Hero→Clinica cover-blur that felt laggy).
+          const px = Math.round(p * MAX_BLUR * 2) / 2;
+          if (px >= 0.5) f = `blur(${px}px)`;
         }
         if (target.style.filter !== f) {
           target.style.filter = f;

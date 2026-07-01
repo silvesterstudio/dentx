@@ -79,6 +79,10 @@ export default function CaseStudies() {
     // big part of the MOBILE lag in exactly the phase the user feels it. This flag
     // parks the cards hidden ONCE and skips the loop until the conveyor begins.
     let conveyorIdle = false;
+    // DESKTOP peel flourish (shadow/scale/fade) only applies once Contact starts
+    // rising. This tracks whether it's currently written so the pure-expand phase
+    // can clear it ONCE instead of re-writing neutral values every scroll frame.
+    let peelActive = false;
     const reset = (tile: HTMLElement) => {
       if (settledInactive) return;
       settledInactive = true;
@@ -86,6 +90,13 @@ export default function CaseStudies() {
       ovVideo?.pause(); // back to a still frame when the overlay isn't in play
       overlay.style.display = "none";
       overlay.style.clipPath = "";
+      // clear the desktop peel flourish so a later re-expand starts neutral
+      peelActive = false;
+      overlay.style.transform = "";
+      overlay.style.boxShadow = "";
+      overlay.style.opacity = "";
+      overlay.style.borderBottomLeftRadius = "";
+      overlay.style.borderBottomRightRadius = "";
       tile.style.visibility = "";
       // release the mobile fixed-position pin (the stage returns to normal flow).
       // removeProperty so the !important-priority inline values set on pin-enter are
@@ -218,11 +229,14 @@ export default function CaseStudies() {
       const srcTop = qr.top;
       tile.style.visibility = "hidden";
       overlay.style.display = "block";
-      overlay.style.left = lerp(qr.left, 0, p) + "px";
-      overlay.style.width = lerp(qr.width, vw, p) + "px";
-      overlay.style.height = lerp(qr.height, vh, p) + "px";
+      // Round to whole px: sub-pixel width/height changes still trigger a full
+      // layout recalc, so snapping to integers means many scroll frames land on the
+      // same value and skip the work entirely (imperceptible during a morph).
+      overlay.style.left = Math.round(lerp(qr.left, 0, p)) + "px";
+      overlay.style.width = Math.round(lerp(qr.width, vw, p)) + "px";
+      overlay.style.height = Math.round(lerp(qr.height, vh, p)) + "px";
       // all corners share the expand radius (rounded tile → square fullscreen)…
-      const er = lerp(18, 0, p);
+      const er = Math.round(lerp(18, 0, p));
       overlay.style.borderRadius = er + "px";
 
       if (mq.matches) {
@@ -233,7 +247,7 @@ export default function CaseStudies() {
         // this instead of the old "Contact slides OVER via z-index" trick, which
         // relied on a portaled fixed overlay's stacking order and silently failed
         // on real mobile browsers — leaving Contact hidden ("page ends at Cazuri").
-        overlay.style.top = lerp(srcTop, 0, p) + "px";
+        overlay.style.top = Math.round(lerp(srcTop, 0, p)) + "px";
         // EXACT tracking: the video's bottom edge sits right on Contact's top edge
         // (no multiplier) so there's no empty slate band between them. Contact is
         // ≥100vh tall (globals.css) so contactTop reaches 0 and the video clears
@@ -250,20 +264,37 @@ export default function CaseStudies() {
       } else {
         // DESKTOP: lift via top + the "peel up" shrink/round/shadow/fade flourish
         // (corners + shrink share the same normalised lift progress).
-        overlay.style.top = lerp(srcTop, 0, p) + lift + "px";
-        const lp = Math.min(1, liftP * 2.5);
-        const r = Math.max(er, 44 * lp).toFixed(1) + "px";
-        overlay.style.borderBottomLeftRadius = r;
-        overlay.style.borderBottomRightRadius = r;
-        // clip-path so the playing video is actually clipped to the corners (top
-        // corners = er, bottom corners = the bigger peel radius r).
-        overlay.style.clipPath = `inset(0 round ${er.toFixed(1)}px ${er.toFixed(1)}px ${r} ${r})`;
-        overlay.style.boxShadow =
-          liftP > 0.01 ? `inset 0 0 0 1.5px rgba(255,255,255,${(0.4 * lp).toFixed(2)})` : "";
-        overlay.style.transform = `scale(${(1 - 0.05 * lp).toFixed(4)})`;
-        overlay.style.opacity = liftP > 0.5
-          ? Math.max(0, 1 - (liftP - 0.5) * 2).toFixed(3)
-          : "";
+        overlay.style.top = Math.round(lerp(srcTop, 0, p) + lift) + "px";
+        if (liftP > 0) {
+          // Contact is rising in → run the full flourish per frame.
+          peelActive = true;
+          const lp = Math.min(1, liftP * 2.5);
+          const r = Math.max(er, 44 * lp).toFixed(1) + "px";
+          overlay.style.borderBottomLeftRadius = r;
+          overlay.style.borderBottomRightRadius = r;
+          // clip-path so the playing video is actually clipped to the corners (top
+          // corners = er, bottom corners = the bigger peel radius r).
+          overlay.style.clipPath = `inset(0 round ${er.toFixed(1)}px ${er.toFixed(1)}px ${r} ${r})`;
+          overlay.style.boxShadow = `inset 0 0 0 1.5px rgba(255,255,255,${(0.4 * lp).toFixed(2)})`;
+          overlay.style.transform = `scale(${(1 - 0.05 * lp).toFixed(4)})`;
+          overlay.style.opacity = liftP > 0.5
+            ? Math.max(0, 1 - (liftP - 0.5) * 2).toFixed(3)
+            : "";
+        } else {
+          // PURE EXPAND (Contact not yet rising): uniform `er` corners. The radius
+          // still animates 18→0 so clip-path updates each frame, but the shadow/
+          // scale/fade are all no-ops here — write their neutral values ONCE on the
+          // lift→expand transition instead of rebuilding the strings every frame.
+          overlay.style.clipPath = `inset(0 round ${er.toFixed(1)}px)`;
+          if (peelActive) {
+            peelActive = false;
+            overlay.style.borderBottomLeftRadius = "";
+            overlay.style.borderBottomRightRadius = "";
+            overlay.style.boxShadow = "";
+            overlay.style.transform = "";
+            overlay.style.opacity = "";
+          }
+        }
       }
 
       // fade the case content out as the card lifts, so the rising video is clean.
@@ -481,6 +512,10 @@ export default function CaseStudies() {
           display: "none",
           background: "#28323f",
           pointerEvents: "none",
+          // Isolate the expanding overlay's per-frame size changes so they can't
+          // force layout/paint work on the rest of the page (the video/cards/quote
+          // subtree still relayouts, but the containment stops it leaking out).
+          contain: "layout paint",
         }}
       >
         <AutoplayVideo controlled loop poster="/clinic-office.webp" preload="auto" src="/video-card.mp4" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
