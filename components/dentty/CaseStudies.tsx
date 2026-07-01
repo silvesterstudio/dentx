@@ -189,12 +189,14 @@ export default function CaseStudies() {
       // expands OVER the frozen bento (just like desktop) — no white gaps to hide.
       if (backdropRef.current) backdropRef.current.style.opacity = "0";
 
-      // The clip stays a still frame in the bento tile (p≈0), then PLAYS as soon as
-      // it begins expanding — the user wants the footage already running while the
-      // card is mid-expand (it continues from the still it was paused on), not only
-      // once it's fullscreen. It keeps playing through the conveyor + lift.
+      // The clip is FROZEN on a still frame (paused — cheap to just scale) for the
+      // WHOLE expand and only starts playing once it's essentially fullscreen.
+      // Decoding video WHILE the overlay is scaled + composited every scroll frame
+      // was the scroll lag during the expand — pausing until p≈1 is the single
+      // biggest win for the morph's smoothness. It then keeps playing through the
+      // conveyor + lift (p stays clamped at 1).
       if (ovVideo) {
-        if (p >= 0.06) {
+        if (p >= 0.985) {
           if (ovVideo.paused) {
             const pr = ovVideo.play();
             if (pr && typeof pr.catch === "function") pr.catch(() => {});
