@@ -569,6 +569,13 @@ html.js-reveal .reveal-img.in-view {
      element taller than the viewport. So here the stage is a normal in-flow block;
      #services is height:auto with padding-bottom = the pin/expand scroll room.
      overflow:visible so the cards above the pinned screenful aren't clipped. */
+  /* FAQ collapses from the desktop two-column (heading | accordion) to a single
+     stacked column, matching how the clinic/reviews grids collapse on mobile. */
+  #faq .faq-grid {
+    grid-template-columns: 1fr !important;
+    gap: clamp(20px, 5vw, 32px) !important;
+  }
+
   #services {
     height: auto !important;
     padding-bottom: 80svh !important; /* ROOM the pinned expand scrubs over (must match CaseStudies) */

@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useContent } from "./LanguageProvider";
 
-// FAQ accordion — a light section (matches the Servicii/Recenzii light blocks:
-// #fbfbfb bg, #28323f ink, Manrope, the same clamp() heading scale and `.reveal`
-// scroll-in). Placed after Contact so it never interferes with the Cazuri video
-// lift (which reveals Contact). The open row expands via a grid-rows 0fr→1fr
-// transition — smooth, no JS height measuring.
+// FAQ — matches the site's wide, editorial, multi-column light sections
+// (MainSection's clinic grid, Reviews' 3-col grid): same 1760 container, the same
+// clamp(20px,2.4vw,44px) side padding + clamp(56px,7vw,96px) vertical rhythm, the
+// same h2 scale (clamp(40px,4.6vw,84px)/500/-0.03em/#28323f), and no redundant
+// eyebrow (Services/Reviews use none). Two columns on desktop — heading on the
+// left, accordion on the right — collapsing to one column on mobile (globals.css).
+// Sits in the non-sticky white flow between Clinica and the Team sweep.
 export default function Faq() {
   const t = useContent();
   const [open, setOpen] = useState<number | null>(0);
@@ -17,145 +19,140 @@ export default function Faq() {
       id="faq"
       data-screen-label="FAQ"
       style={{
-        // z2 to match #main — FAQ lives in the non-sticky light flow between
-        // Clinica (#main, z2) and Team (#team, z3); it scrolls normally, so this
-        // just keeps it in the same white band without covering the team layer.
         position: "relative",
         zIndex: 2,
         background: "#fbfbfb",
         boxSizing: "border-box",
-        padding: "clamp(64px, 8vw, 120px) clamp(20px, 2.4vw, 44px)",
+        padding: "clamp(56px, 7vw, 96px) clamp(20px, 2.4vw, 44px)",
       }}
     >
-      <div style={{ maxWidth: 900, margin: "0 auto", width: "100%" }}>
-        <div className="reveal">
-          <div
-            style={{
-              display: "inline-block",
-              color: "rgba(40,50,63,0.55)",
-              fontSize: 13,
-              fontWeight: 600,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              marginBottom: 14,
-            }}
-          >
-            {t.faq.eyebrow}
+      <div style={{ maxWidth: 1760, margin: "0 auto", width: "100%" }}>
+        <div
+          className="faq-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1.5fr",
+            gap: "clamp(28px, 4vw, 96px)",
+            alignItems: "start",
+          }}
+        >
+          {/* LEFT — heading + intro (matches the site's top-left heading language) */}
+          <div className="reveal">
+            <h2
+              style={{
+                margin: 0,
+                color: "#28323f",
+                fontSize: "clamp(40px, 4.6vw, 84px)",
+                fontWeight: 500,
+                lineHeight: 0.98,
+                letterSpacing: "-0.03em",
+              }}
+            >
+              {t.faq.title}
+            </h2>
+            <p
+              style={{
+                margin: "clamp(16px, 1.6vw, 24px) 0 0",
+                maxWidth: "34ch",
+                color: "rgba(40,50,63,0.6)",
+                fontSize: "clamp(15px, 1.05vw, 17px)",
+                lineHeight: 1.55,
+              }}
+            >
+              {t.faq.subtitle}
+            </p>
           </div>
-          <h2
-            style={{
-              margin: 0,
-              color: "#28323f",
-              fontSize: "clamp(34px, 4.2vw, 68px)",
-              fontWeight: 500,
-              lineHeight: 0.98,
-              letterSpacing: "-0.03em",
-            }}
-          >
-            {t.faq.title}
-          </h2>
-          <p
-            style={{
-              margin: "16px 0 0",
-              maxWidth: 620,
-              color: "rgba(40,50,63,0.68)",
-              fontSize: "clamp(15px, 1.1vw, 18px)",
-              lineHeight: 1.5,
-            }}
-          >
-            {t.faq.subtitle}
-          </p>
-        </div>
 
-        <div style={{ marginTop: "clamp(28px, 3.5vw, 52px)" }}>
-          {t.faq.items.map((item, i) => {
-            const isOpen = open === i;
-            return (
-              <div
-                key={i}
-                className="reveal"
-                style={{
-                  borderTop: "1px solid rgba(40,50,63,0.12)",
-                  borderBottom:
-                    i === t.faq.items.length - 1 ? "1px solid rgba(40,50,63,0.12)" : "none",
-                  transitionDelay: `${0.03 + i * 0.04}s`,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setOpen(isOpen ? null : i)}
-                  aria-expanded={isOpen}
+          {/* RIGHT — accordion */}
+          <div>
+            {t.faq.items.map((item, i) => {
+              const isOpen = open === i;
+              return (
+                <div
+                  key={i}
+                  className="reveal"
                   style={{
-                    all: "unset",
-                    boxSizing: "border-box",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 20,
-                    width: "100%",
-                    cursor: "pointer",
-                    padding: "clamp(20px, 2.4vw, 28px) 4px",
+                    borderTop: "1px solid rgba(40,50,63,0.12)",
+                    borderBottom:
+                      i === t.faq.items.length - 1 ? "1px solid rgba(40,50,63,0.12)" : "none",
+                    transitionDelay: `${0.03 + i * 0.04}s`,
                   }}
                 >
-                  <span
+                  <button
+                    type="button"
+                    onClick={() => setOpen(isOpen ? null : i)}
+                    aria-expanded={isOpen}
                     style={{
-                      color: "#28323f",
-                      fontSize: "clamp(16px, 1.35vw, 21px)",
-                      fontWeight: 600,
-                      lineHeight: 1.3,
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    {item.q}
-                  </span>
-                  {/* plus → × rotate on open */}
-                  <span
-                    aria-hidden
-                    style={{
-                      flexShrink: 0,
-                      width: 34,
-                      height: 34,
-                      borderRadius: "50%",
-                      border: "1px solid rgba(40,50,63,0.2)",
+                      all: "unset",
+                      boxSizing: "border-box",
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      color: "#28323f",
-                      transform: isOpen ? "rotate(45deg)" : "rotate(0deg)",
-                      transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+                      justifyContent: "space-between",
+                      gap: 20,
+                      width: "100%",
+                      cursor: "pointer",
+                      padding: "clamp(20px, 2vw, 26px) 2px",
                     }}
                   >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                  </span>
-                </button>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateRows: isOpen ? "1fr" : "0fr",
-                    transition: "grid-template-rows 0.34s cubic-bezier(0.16, 1, 0.3, 1)",
-                  }}
-                >
-                  <div style={{ overflow: "hidden" }}>
-                    <p
+                    <span
                       style={{
-                        margin: 0,
-                        padding: "0 4px clamp(20px, 2.4vw, 28px)",
-                        maxWidth: 680,
-                        color: "rgba(40,50,63,0.72)",
-                        fontSize: "clamp(15px, 1.05vw, 17px)",
-                        lineHeight: 1.6,
+                        color: "#28323f",
+                        fontSize: "clamp(17px, 1.3vw, 21px)",
+                        fontWeight: 600,
+                        lineHeight: 1.3,
+                        letterSpacing: "-0.01em",
                       }}
                     >
-                      {item.a}
-                    </p>
+                      {item.q}
+                    </span>
+                    <span
+                      aria-hidden
+                      style={{
+                        flexShrink: 0,
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        border: "1px solid rgba(40,50,63,0.2)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#28323f",
+                        transform: isOpen ? "rotate(45deg)" : "rotate(0deg)",
+                        transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+                      }}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    </span>
+                  </button>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateRows: isOpen ? "1fr" : "0fr",
+                      transition: "grid-template-rows 0.34s cubic-bezier(0.16, 1, 0.3, 1)",
+                    }}
+                  >
+                    <div style={{ overflow: "hidden" }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          padding: "0 2px clamp(22px, 2.2vw, 30px)",
+                          maxWidth: "62ch",
+                          color: "rgba(40,50,63,0.72)",
+                          fontSize: "clamp(15px, 1.05vw, 17px)",
+                          lineHeight: 1.62,
+                        }}
+                      >
+                        {item.a}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
