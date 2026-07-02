@@ -178,6 +178,14 @@ export default function CaseStudies() {
       }
       // active again — re-arm reset() so it fires once when we next go inactive
       settledInactive = false;
+      // If a background warm-up is still parked as a near-invisible fullscreen
+      // overlay, cancel it and drop its 0.001 opacity NOW — the real expand is
+      // taking over, and leaving the warm opacity would render it invisible.
+      if (warmSettle) {
+        clearTimeout(warmSettle);
+        warmSettle = 0;
+      }
+      if (overlay.style.opacity === "0.001") overlay.style.opacity = "";
 
       // MOBILE PIN: the instant we enter the window (bento bottom at screen bottom),
       // FREEZE the stage at the viewport bottom with position:fixed. Lock the
@@ -410,15 +418,18 @@ export default function CaseStudies() {
     window.addEventListener("resize", onScroll);
     update();
 
-    // FIRST-EXPAND WARM-UP. The overlay subtree (fullscreen video poster, the
+    // FIRST-EXPAND WARM-UP. The overlay subtree (fullscreen video, the
     // before/after photos, glass cards with backdrop-filter) sits display:none
-    // until the first expand — so the FIRST expand paid image decode + layer
-    // creation + video-decoder init all at once, right in the middle of the
-    // morph (the user reported the expand lags only the first time; the second
-    // run is smooth because every cache is warm by then). Paint it ONCE at
-    // near-zero opacity during idle time and play/pause the video for a frame,
-    // so all that cold work happens invisibly long before Servicii is reached.
+    // until the first expand — so the FIRST expand paid image decode + blur
+    // layer creation + video-decoder init all at once, right in the middle of
+    // the morph (the user reported the expand lags only the FIRST time; the
+    // second run is smooth because every cache is warm by then — and that they
+    // could MAKE it smooth by scrolling down to the before/after images once,
+    // then back). Paint the whole subtree ONCE at near-zero opacity during idle
+    // time so all that cold work happens invisibly long before Servicii.
     let warmed = false;
+    // holds the pending "park it back" timeout so the real expand can cancel it.
+    let warmSettle = 0;
     const warmUp = () => {
       if (warmed) return;
       warmed = true;
@@ -440,17 +451,43 @@ export default function CaseStudies() {
           }).catch(() => {});
         }
       }
-      // two frames is enough for decode + first raster, then put it back
+      // Warm the before/after cards too — THIS is the piece the old warm-up
+      // missed. Their photos are next/image LAZY (never even requested while the
+      // card is parked off-screen at translateY(140%)) and their glass panels use
+      // backdrop-filter (an expensive first paint). The whole overlay is at 0.001
+      // opacity, so we can bring the cards fully on-screen with no visible flash —
+      // that makes next/image's IntersectionObserver fire (kicking off the image
+      // downloads + decodes) and forces the blur layers to rasterise once.
+      ovCards.forEach((c) => {
+        c.style.display = "";
+        c.style.transform = "translateY(0)";
+        c.style.opacity = "1";
+      });
+      ovBlockData.forEach((d) => {
+        d.block.style.display = "";
+      });
+      const park = () => {
+        warmSettle = 0;
+        overlay.style.opacity = "";
+        // return the cards to the parked (reset) state — decoded + cached now.
+        ovCards.forEach((c) => {
+          c.style.transform = "translateY(140%)";
+          c.style.opacity = "0";
+        });
+        if (settledInactive) {
+          overlay.style.display = "none";
+          overlay.style.left = "";
+          overlay.style.top = "";
+          overlay.style.width = "";
+          overlay.style.height = "";
+        }
+      };
+      // Two frames trigger the lazy-image requests + first blur raster; then hold
+      // briefly (decode-while-painted is guaranteed only while on-screen) so the
+      // webp bitmaps finish decoding before we pull the overlay back out.
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
-          overlay.style.opacity = "";
-          if (settledInactive) {
-            overlay.style.display = "none";
-            overlay.style.left = "";
-            overlay.style.top = "";
-            overlay.style.width = "";
-            overlay.style.height = "";
-          }
+          warmSettle = window.setTimeout(park, 500);
         }),
       );
     };
@@ -461,6 +498,7 @@ export default function CaseStudies() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
+      if (warmSettle) clearTimeout(warmSettle);
       const cic = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
       if (ric && cic) cic(warmId as number);
       else clearTimeout(warmId as number);
