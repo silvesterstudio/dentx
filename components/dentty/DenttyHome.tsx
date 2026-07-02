@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Preloader from "./Preloader";
 import RevealOnScroll from "./RevealOnScroll";
 import Header from "./Header";
 import Hero from "./Hero";
@@ -143,7 +142,6 @@ export default function DenttyHome() {
 
   return (
     <div style={{ background: "#1d242b" }}>
-      <Preloader />
       <RevealOnScroll />
       <Header showScrim={showScrim} />
       <Hero />
