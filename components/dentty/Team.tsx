@@ -10,6 +10,7 @@ import { useContent } from "./LanguageProvider";
 const PHOTOS = [
   { desktop: "/team-dorel-desktop.webp", mobile: "/team-dorel-mobile.webp" },
   { desktop: "/team-alexandru-desktop.webp", mobile: "/team-alexandru-mobile.webp" },
+  { desktop: "/team-natalia-desktop.webp", mobile: "/team-natalia-mobile.webp" },
   { desktop: "/team-irina-desktop.webp", mobile: "/team-irina-mobile.webp" },
   { desktop: "/team-galina-desktop.webp", mobile: "/team-galina-mobile.webp" },
   { desktop: "/team-lidia-desktop.webp", mobile: "/team-lidia-mobile.webp" },

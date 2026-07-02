@@ -55,6 +55,11 @@ export const ro: Content = {
         bio: "Stomatolog-terapeut atent la detalii, specializat în tratarea cariei și restaurări estetice. Pune accent pe diagnostic corect și soluții durabile.",
       },
       {
+        name: "Cucu Natalia",
+        role: "Stomatolog · Protezist · Terapeut",
+        bio: "Stomatolog-protezist și terapeut, redă zâmbete naturale prin coroane și restaurări de calitate. Lucrează cu materiale moderne pentru un rezultat estetic și confortabil.",
+      },
+      {
         name: "Paralunga Irina",
         role: "Asistentă medicală",
         bio: "Asistentă medicală care colaborează strâns cu medicii și pregătește instrumentarul steril. Respectă riguros protocoalele de prevenire a infecțiilor.",
