@@ -83,6 +83,13 @@ export default function CaseStudies() {
     // rising. This tracks whether it's currently written so the pure-expand phase
     // can clear it ONCE instead of re-writing neutral values every scroll frame.
     let peelActive = false;
+    // The rounded-corner radius `er` animates 18→0 but, rounded to whole px, takes
+    // only ~19 distinct values across the WHOLE expand — yet the old code rewrote
+    // borderRadius + the clip-path string (a genuine per-frame re-clip/raster of the
+    // fullscreen overlay) on EVERY scroll frame. Cache the last radius so those
+    // writes happen only on the ~19 frames the corner actually changes. This is the
+    // biggest per-frame saving in the pure-expand phase the user feels as lag.
+    let lastEr = -1;
     const reset = (tile: HTMLElement) => {
       if (settledInactive) return;
       settledInactive = true;
@@ -92,6 +99,7 @@ export default function CaseStudies() {
       overlay.style.clipPath = "";
       // clear the desktop peel flourish so a later re-expand starts neutral
       peelActive = false;
+      lastEr = -1; // force the corner radius + clip-path to reapply on re-expand
       overlay.style.transform = "";
       overlay.style.boxShadow = "";
       overlay.style.opacity = "";
@@ -237,7 +245,10 @@ export default function CaseStudies() {
       overlay.style.height = Math.round(lerp(qr.height, vh, p)) + "px";
       // all corners share the expand radius (rounded tile → square fullscreen)…
       const er = Math.round(lerp(18, 0, p));
-      overlay.style.borderRadius = er + "px";
+      // only touch the corner radius / clip-path on frames where it actually
+      // changed (≈19 frames total, not every frame — see lastEr note above).
+      const erChanged = er !== lastEr;
+      if (erChanged) overlay.style.borderRadius = er + "px";
 
       if (mq.matches) {
         // MOBILE: reveal Contact by sliding the fullscreen video UP with a cheap
@@ -260,7 +271,7 @@ export default function CaseStudies() {
         // A PLAYING <video> renders on a hardware layer that ignores border-radius +
         // overflow:hidden on mobile, so its corners stayed SHARP during the expand.
         // clip-path clips composited layers too — round all four corners by `er`.
-        overlay.style.clipPath = `inset(0 round ${er.toFixed(1)}px)`;
+        if (erChanged) overlay.style.clipPath = `inset(0 round ${er}px)`;
       } else {
         // DESKTOP: lift via top + the "peel up" shrink/round/shadow/fade flourish
         // (corners + shrink share the same normalised lift progress).
@@ -281,11 +292,11 @@ export default function CaseStudies() {
             ? Math.max(0, 1 - (liftP - 0.5) * 2).toFixed(3)
             : "";
         } else {
-          // PURE EXPAND (Contact not yet rising): uniform `er` corners. The radius
-          // still animates 18→0 so clip-path updates each frame, but the shadow/
-          // scale/fade are all no-ops here — write their neutral values ONCE on the
-          // lift→expand transition instead of rebuilding the strings every frame.
-          overlay.style.clipPath = `inset(0 round ${er.toFixed(1)}px)`;
+          // PURE EXPAND (Contact not yet rising): uniform `er` corners. The clip-path
+          // is only rewritten when the rounded radius changes (≈19 frames), OR once
+          // when we drop back out of the lift phase (peelActive) — where the clip
+          // string held the bigger peel radius and must be reset to uniform `er`.
+          if (erChanged || peelActive) overlay.style.clipPath = `inset(0 round ${er}px)`;
           if (peelActive) {
             peelActive = false;
             overlay.style.borderBottomLeftRadius = "";
@@ -296,6 +307,8 @@ export default function CaseStudies() {
           }
         }
       }
+
+      lastEr = er; // remember this frame's radius so the next can skip unchanged writes
 
       // fade the case content out as the card lifts, so the rising video is clean.
       const sf = 1 - liftP;
@@ -330,16 +343,33 @@ export default function CaseStudies() {
           for (let k = 0; k < n; k++) {
             cards[k].style.transform = "translateY(140%)";
             cards[k].style.opacity = "0";
+            // display:none the before/after glass cards + quote blocks for the WHOLE
+            // morph. They're already invisible here (off-screen + opacity 0), but
+            // while merely parked they stay in the layout tree — so every frame the
+            // overlay resizes, the browser re-laid-out all 3 backdrop-filter glass
+            // cards (blur is the most expensive paint on the page). Pulling them out
+            // of layout entirely removes that per-frame cost during the expand; the
+            // conveyor restores them (below) the instant it begins.
+            cards[k].style.display = "none";
             const data = ovBlockData[k];
             if (!data) continue;
             data.block.style.opacity = "0";
+            data.block.style.display = "none";
             data.words.forEach((w) => (w.style.opacity = "0"));
             if (data.author) data.author.style.opacity = "0";
           }
         }
         return;
       }
-      conveyorIdle = false;
+      if (conveyorIdle) {
+        // conveyor is starting — put the cards/blocks back into layout ONCE.
+        conveyorIdle = false;
+        for (let k = 0; k < n; k++) {
+          cards[k].style.display = "";
+          const data = ovBlockData[k];
+          if (data) data.block.style.display = "";
+        }
+      }
       for (let k = 0; k < n; k++) {
         const isLast = k === n - 1;
         const localK = past - (titleHold + k * stride);
@@ -569,7 +599,7 @@ export default function CaseStudies() {
           contain: "layout paint",
         }}
       >
-        <AutoplayVideo controlled loop poster="/clinic-office.webp" preload="auto" src="/video-card.mp4" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        <AutoplayVideo controlled loop poster="/video-card-poster.webp" preload="auto" src="/video-card.mp4" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
         {/* ONE black gradient over the whole clip — dark enough that ALL the white
             text (title + testimonials) reads white wherever it sits, instead of
             per-text dark blocks behind each one. Darkest at the top (title), still

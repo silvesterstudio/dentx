@@ -201,11 +201,16 @@ export default function Services() {
             {/* Preview is STATIC (controlled = never auto-plays) — it shows the
                 poster still. The clip only ever plays once it has expanded to
                 fullscreen (see CaseStudies). So no video decodes in the bento or
-                during the morph — only when it's the full-screen feature. */}
+                during the morph — only when it's the full-screen feature.
+                Poster = the video's OWN first frame (video-card-poster.webp) so
+                the resting tile reads as the PAUSED clip on every device. Desktop
+                decodes the clip and shows frame 0; mobile never decodes an unplayed
+                video, so without this it fell back to a generic cover image — now
+                both show the identical still. */}
             <AutoplayVideo
               className="qt-video"
               controlled
-              poster="/clinic-office.webp"
+              poster="/video-card-poster.webp"
               src="/video-card.mp4"
               style={{
                 position: "absolute",
