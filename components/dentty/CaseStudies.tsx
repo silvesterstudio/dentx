@@ -433,7 +433,27 @@ export default function CaseStudies() {
     const warmUp = () => {
       if (warmed) return;
       warmed = true;
-      // already live (deep link straight into the expand) — nothing to warm
+      // Warm the SERVICES BENTO images FIRST — the actual first-expand culprit,
+      // and independent of the overlay's state (so it runs even on the deep-link
+      // path below). The 9 bento tiles use next/image (LAZY) and sit UNDECODED at
+      // the top of the page, yet they're painted BEHIND the video as it grows to
+      // fullscreen. So on the FIRST expand all 9 decode mid-morph (main-thread
+      // decode racing the geometry animation = the jank). Scrolling the whole page
+      // once pre-decodes them — exactly why the user's SECOND expand was smooth.
+      // Promote them to eager + kick off decode now, during idle, so the morph
+      // never competes with a cold image decode. (eager + decode() don't depend on
+      // viewport visibility, unlike the lazy IntersectionObserver, so this warms
+      // them without any scroll.)
+      document.querySelectorAll<HTMLImageElement>("#services-grid img").forEach((img) => {
+        try {
+          img.loading = "eager";
+          if (typeof img.decode === "function") img.decode().catch(() => {});
+        } catch {
+          /* ignore — best-effort warm-up */
+        }
+      });
+      // already live (deep link straight into the expand) — the overlay is in play,
+      // so skip the (invisible) overlay/card warm-up below; the bento is warmed above.
       if (!settledInactive) return;
       const vw2 = document.documentElement.clientWidth || 1;
       const vh2 = window.innerHeight || 1;

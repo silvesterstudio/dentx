@@ -94,7 +94,6 @@ export default function Hero() {
               fontWeight: 800,
               lineHeight: 0.98,
               letterSpacing: "-0.035em",
-              textShadow: "0 4px 40px rgba(8,11,16,0.45)",
             }}
           >
             <span className="hero-reveal-line">
