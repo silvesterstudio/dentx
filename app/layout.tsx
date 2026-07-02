@@ -91,6 +91,18 @@ export default function RootLayout({
           attributes like cz-shortcut-listen onto <body> before React hydrates,
           which would otherwise log a hydration-mismatch warning. */}
       <body suppressHydrationWarning>
+        {/* Stage the hero's reveal BEFORE first paint (no flash of the un-hidden
+            hero). This flags <html> so the hero title/image/CTA start hidden;
+            HeroIntro removes the flag right after mount so they animate in. Runs
+            synchronously during parse. Skips for reduced-motion, and if JS is
+            disabled it simply never runs, so the hero shows normally. (There is
+            no longer a navy intro curtain — only this staged reveal.) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{if(!matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.classList.add('intro-pre');}}catch(e){}})();",
+          }}
+        />
         {/* schema.org LocalBusiness/Dentist — powers Google's rich local result. */}
         <script
           type="application/ld+json"
