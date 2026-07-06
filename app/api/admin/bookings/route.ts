@@ -79,3 +79,42 @@ export async function PATCH(req: Request) {
   }
   return NextResponse.json({ ok: true });
 }
+
+// Permanently delete a booking. id can be passed as a query param (?id=…) or in
+// the JSON body.
+export async function DELETE(req: Request) {
+  if (!authed(req)) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+  const s = supa();
+  if (!s) return NextResponse.json({ ok: false, error: "not_configured" }, { status: 500 });
+
+  let id = new URL(req.url).searchParams.get("id") ?? "";
+  if (!id) {
+    try {
+      const body = (await req.json()) as { id?: string };
+      id = String(body.id ?? "");
+    } catch {
+      /* no body — fall through to validation */
+    }
+  }
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "validation" }, { status: 400 });
+  }
+
+  const res = await fetch(
+    `${s.url}/rest/v1/bookings?id=eq.${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+      headers: {
+        apikey: s.key,
+        Authorization: `Bearer ${s.key}`,
+        Prefer: "return=minimal",
+      },
+    },
+  );
+  if (!res.ok) {
+    return NextResponse.json({ ok: false, error: "delete_failed" }, { status: 502 });
+  }
+  return NextResponse.json({ ok: true });
+}

@@ -92,6 +92,46 @@ export default function AdminPage() {
     });
   };
 
+  const remove = async (b: Booking) => {
+    if (!confirm(`Ștergi definitiv programarea de la ${b.name} (${b.phone})?`)) return;
+    const prev = bookings;
+    setBookings((list) => list.filter((x) => x.id !== b.id));
+    const res = await fetch(`/api/admin/bookings?id=${encodeURIComponent(b.id)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${pass}` },
+    });
+    if (!res.ok) {
+      setError("Ștergerea a eșuat. Reîncearcă.");
+      setBookings(prev); // rollback
+    }
+  };
+
+  const exportCsv = () => {
+    const header = ["Primit", "Nume", "Telefon", "Data preferată", "Ora preferată", "Status"];
+    const esc = (v: string) => `"${(v ?? "").replace(/"/g, '""')}"`;
+    const rows = bookings.map((b) =>
+      [
+        new Date(b.created_at).toLocaleString("ro-RO"),
+        b.name,
+        b.phone,
+        b.preferred_date ?? "",
+        b.preferred_time ?? "",
+        STATUS_LABEL[b.status] ?? b.status,
+      ]
+        .map((c) => esc(String(c)))
+        .join(","),
+    );
+    const csv = "﻿" + [header.map(esc).join(","), ...rows].join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `programari-dentx-${stamp}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const fmt = (b: Booking) => {
     const parts = [b.preferred_date, b.preferred_time].filter(Boolean);
     return parts.length ? parts.join(" · ") : "—";
@@ -136,6 +176,9 @@ export default function AdminPage() {
             Programări <span style={{ color: "#6b7280", fontWeight: 500 }}>({bookings.length})</span>
           </h1>
           <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={exportCsv} disabled={bookings.length === 0} style={ghostBtn}>
+              Export CSV
+            </button>
             <button onClick={() => load(pass)} disabled={loading} style={ghostBtn}>
               {loading ? "…" : "Reîmprospătează"}
             </button>
@@ -166,6 +209,7 @@ export default function AdminPage() {
                   <th style={th}>Telefon</th>
                   <th style={th}>Preferat</th>
                   <th style={th}>Status</th>
+                  <th style={th}></th>
                 </tr>
               </thead>
               <tbody>
@@ -195,6 +239,24 @@ export default function AdminPage() {
                         }}
                       >
                         {STATUS_LABEL[b.status] ?? b.status}
+                      </button>
+                    </td>
+                    <td style={{ ...td, textAlign: "right" }}>
+                      <button
+                        onClick={() => remove(b)}
+                        title="Șterge programarea"
+                        style={{
+                          cursor: "pointer",
+                          background: "transparent",
+                          border: "1px solid #3a2530",
+                          color: "#f87171",
+                          borderRadius: 8,
+                          padding: "5px 10px",
+                          fontSize: 12,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Șterge
                       </button>
                     </td>
                   </tr>
