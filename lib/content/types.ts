@@ -11,7 +11,14 @@ export type Content = {
     faq: string;
     contact: string;
   };
-  common: { callNow: string; book: string; viewMore: string };
+  common: {
+    callNow: string;
+    book: string;
+    viewMore: string;
+    feedback: string;
+    callFromPhone: string;
+    orWrite: string;
+  };
   hero: { titleL1: string; titleL2: string; sub: string };
   about: {
     eyebrow: string;

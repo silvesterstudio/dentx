@@ -349,6 +349,9 @@ html.js-reveal #quote-tile.reveal {
   #nav-burger {
     display: flex !important;
   }
+  #nav-call-mobile {
+    display: flex !important;
+  }
   .header-desktop-actions {
     display: none !important;
   }

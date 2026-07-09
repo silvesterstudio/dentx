@@ -19,6 +19,9 @@ export const ro: Content = {
     callNow: "Sună acum",
     book: "Programează-te",
     viewMore: "Vezi mai mult",
+    feedback: "Feedback",
+    callFromPhone: "Sună-ne la",
+    orWrite: "sau scrie-ne pe",
   },
   hero: {
     titleL1: "Zâmbetul tău",

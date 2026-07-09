@@ -19,6 +19,9 @@ export const ru: Content = {
     callNow: "Позвонить",
     book: "Записаться",
     viewMore: "Подробнее",
+    feedback: "Отзыв",
+    callFromPhone: "Позвоните нам",
+    orWrite: "или напишите в",
   },
   hero: {
     titleL1: "Ваша улыбка",
