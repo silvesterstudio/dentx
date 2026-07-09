@@ -754,4 +754,26 @@ html.js-reveal #quote-tile.reveal {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
+
+  /* THE video-not-fullscreen fix. The overlay video is promoted to its own
+     compositor layer on every width (`.qt-video, #cazuri-overlay video {
+     transform: translateZ(0) }`) — a DESKTOP scroll-lag optimization. But mobile
+     uses the BOX-RESIZE morph: the overlay box itself grows tile→fullscreen with
+     the video at 100%×100%. On mobile GPUs a separately-composited <video> does
+     NOT re-rasterise to the growing layout box, so the expanded overlay fills
+     with its own #28323f background instead of footage — the video looks like it
+     never zooms to fullscreen (a big dark area below a small strip of clip).
+     This is the same "CSS transform on a <video> blanks the hardware surface on
+     mobile" class of bug the earlier expand fix hit; that fix only cleared the
+     JS INLINE transform, but this CSS one survived. De-promote the video here so
+     it paints as a plain element filling the resizing box; the overlay's
+     clip-path still rounds the corners. Mobile never needed the promotion. */
+  #cazuri-overlay video,
+  .qt-video {
+    transform: none !important;
+    -webkit-transform: none !important;
+    backface-visibility: visible !important;
+    -webkit-backface-visibility: visible !important;
+    will-change: auto !important;
+  }
 }
