@@ -352,90 +352,88 @@ export default function CaseStudies() {
       const srcTop = qr.top;
       if (tile.style.visibility !== "hidden") tile.style.visibility = "hidden";
       if (overlay.style.display !== "block") overlay.style.display = "block";
-      // STATIC-SIZE MORPH. The overlay box is parked at FULLSCREEN for the whole
-      // expand (these four writes are no-ops after the first frame) and the
-      // tile→fullscreen window is carved out of it per frame with clip-path,
-      // while the video + gradient are counter-transformed so the window's
-      // content is pixel-identical to the old width/height-animated box. Why:
-      // the old morph resized a promoted (will-change: transform) fullscreen
-      // layer every frame, forcing the GPU to re-allocate and re-rasterise the
-      // overlay's and gradient's textures on every scroll frame — the residual
-      // expand lag that survived the cache warm-ups. clip-path and transform
-      // updates are compositor-side: NOTHING re-rasterises during the morph.
-      setPx("left", 0);
-      setPx("top", 0);
-      setPx("width", vw);
-      setPx("height", vh);
-      // the reveal window, quantised to whole px like the old geometry
+      // the reveal window (tile → fullscreen), quantised to whole px so many
+      // scroll frames land on the same value and skip work.
       const wx = Math.round(lerp(qr.left, 0, p));
       const wy = Math.round(lerp(srcTop, 0, p));
       const ww = Math.max(1, Math.round(lerp(qr.width, vw, p)));
       const wh = Math.max(1, Math.round(lerp(qr.height, vh, p)));
       // all corners share the expand radius (rounded tile → square fullscreen)
       const er = Math.round(lerp(18, 0, p));
-      // Counter-map the video onto the window so it renders exactly as
-      // object-fit:cover WITHIN the window (what the old resizing box showed).
-      // The element is parked at the SOURCE aspect ratio at fullscreen-cover
-      // size (so the FULL source is available — a viewport-cropped element
-      // couldn't show the extra height/width a differently-shaped window's
-      // cover-crop needs), then per frame a uniform scale
-      // k = coverScale(window)/coverScale(fullscreen) with aligned centres
-      // reproduces the window's cover-crop exactly; the overlay clip-path does
-      // the cropping. Constant at p=1, so the setter caches skip the writes
-      // through the whole conveyor + lift.
-      const ar = ovVideo && ovVideo.videoWidth > 0 ? ovVideo.videoWidth / ovVideo.videoHeight : 16 / 9;
-      const coverW = Math.round(Math.max(vw, vh * ar));
-      const coverH = Math.round(Math.max(vh, vw / ar));
-      setVidPx("width", coverW); // layout writes only on resize / metadata load
-      setVidPx("height", coverH);
-      const k = Math.max(ww / coverW, wh / coverH);
-      setVideoT(
-        `translate(${(wx + (ww - k * coverW) / 2).toFixed(1)}px, ${(wy + (wh - k * coverH) / 2).toFixed(1)}px) scale(${k.toFixed(4)})`,
-      );
-      // The gradient stretched with the box in the old version — a non-uniform
-      // scale of the fullscreen-sized layer renders the same gradient at window
-      // size (linear gradients scale linearly). Identity at p=1 as well.
-      setGradT(
-        ww === vw && wh === vh && wx === 0 && wy === 0
-          ? ""
-          : `translate(${wx}px, ${wy}px) scale(${(ww / vw).toFixed(4)}, ${(wh / vh).toFixed(4)})`,
-      );
-      // clip-path clips the composited video layer too (why the corners need no
-      // border-radius); setClip's string cache dedups identical frames.
-      const windowClip = `inset(${wy}px ${vw - wx - ww}px ${vh - wy - wh}px ${wx}px round ${er}px)`;
 
       if (mq.matches) {
-        // MOBILE: reveal Contact by sliding the fullscreen video UP with a cheap
-        // GPU transform (translateY — no repaint, no lag). Contact sits BENEATH it
-        // (its own z-index) and is uncovered as the video clears the screen, its
-        // bottom edge tracking Contact's top edge for a seamless hand-off. We do
-        // this instead of the old "Contact slides OVER via z-index" trick, which
-        // relied on a portaled fixed overlay's stacking order and silently failed
-        // on real mobile browsers — leaving Contact hidden ("page ends at Cazuri").
-        // EXACT tracking: the video's bottom edge sits right on Contact's top edge
-        // (no multiplier) so there's no empty slate band between them. Contact is
-        // ≥100vh tall (globals.css) so contactTop reaches 0 and the video clears
-        // the screen fully at the bottom.
+        // MOBILE — BOX-RESIZE morph. A CSS transform applied to a <video> blanks
+        // its hardware video surface on many mobile browsers, so the expand
+        // rendered the overlay's #28323f background instead of the clip (the
+        // "just a dark blue box" bug). So on mobile the OVERLAY BOX itself
+        // resizes tile→fullscreen and the video fills it at 100% with NO
+        // transform — the original mobile path, which was already smooth (mobile
+        // never had the desktop expand lag; the static-size morph below is the
+        // desktop-only perf win). Clear any video transform/size the desktop
+        // branch may have left, then size the box to the window.
+        setVideoT("");
+        if (ovVideo && ovVideo.style.width) {
+          ovVideo.style.width = "";
+          ovVideo.style.height = "";
+        }
+        setGradT("");
+        setPx("left", wx);
+        setPx("top", wy);
+        setPx("width", ww);
+        setPx("height", wh);
+        // Reveal Contact by sliding the box UP (compositor translateY — no
+        // repaint). Contact sits BENEATH it (z5 < z6) and is uncovered as the
+        // video clears the screen, its bottom edge tracking Contact's top edge.
         setOvTransform(`translateY(${Math.max(-vh, lift).toFixed(1)}px)`);
         setOvOpacity("");
-        setClip(windowClip);
+        // A PLAYING <video> ignores border-radius on mobile; clip-path clips the
+        // composited layer too, so round the corners with it (er → 0 at full).
+        setClip(`inset(0 round ${er}px)`);
       } else {
-        // DESKTOP: the "peel up" lift — translateY + shrink/round/fade flourish
-        // (corners + shrink share the same normalised lift progress).
+        // DESKTOP — STATIC-SIZE morph. The overlay box is parked at FULLSCREEN
+        // for the whole expand (these writes are no-ops after the first frame)
+        // and the tile→fullscreen window is carved out per frame with clip-path,
+        // while the video + gradient are counter-transformed so the window's
+        // content is pixel-identical to a resizing box. Why: the old morph
+        // resized a promoted fullscreen layer every frame, forcing the GPU to
+        // re-allocate + re-rasterise the overlay/gradient textures per frame —
+        // the residual expand lag. clip-path + transforms are compositor-side, so
+        // NOTHING re-rasterises during the morph. (Desktop renders a transformed
+        // <video> correctly, unlike mobile — hence the split.)
+        setPx("left", 0);
+        setPx("top", 0);
+        setPx("width", vw);
+        setPx("height", vh);
+        // Counter-map the video onto the window so it renders exactly as
+        // object-fit:cover WITHIN the window. The element is parked at the SOURCE
+        // aspect ratio at fullscreen-cover size (so the full source is available
+        // for a differently-shaped window's cover-crop), then a uniform scale
+        // k = coverScale(window)/coverScale(fullscreen) with aligned centres
+        // reproduces the crop; the clip-path does the cropping. Identity at p=1,
+        // so the caches skip these writes through the conveyor + lift.
+        const ar = ovVideo && ovVideo.videoWidth > 0 ? ovVideo.videoWidth / ovVideo.videoHeight : 16 / 9;
+        const coverW = Math.round(Math.max(vw, vh * ar));
+        const coverH = Math.round(Math.max(vh, vw / ar));
+        setVidPx("width", coverW); // layout writes only on resize / metadata load
+        setVidPx("height", coverH);
+        const k = Math.max(ww / coverW, wh / coverH);
+        setVideoT(
+          `translate(${(wx + (ww - k * coverW) / 2).toFixed(1)}px, ${(wy + (wh - k * coverH) / 2).toFixed(1)}px) scale(${k.toFixed(4)})`,
+        );
+        // The gradient (fullscreen-sized) is non-uniformly scaled onto the window
+        // — linear gradients scale linearly, so the result is identical.
+        setGradT(
+          ww === vw && wh === vh && wx === 0 && wy === 0
+            ? ""
+            : `translate(${wx}px, ${wy}px) scale(${(ww / vw).toFixed(4)}, ${(wh / vh).toFixed(4)})`,
+        );
+        const windowClip = `inset(${wy}px ${vw - wx - ww}px ${vh - wy - wh}px ${wx}px round ${er}px)`;
+        // "peel up" lift — translateY + shrink/round/fade flourish.
         if (liftP > 0) {
-          // Contact is rising in → run the flourish. Everything here is either
-          // compositor-only (transform/opacity) or written only on the frames it
-          // visibly changes (the quantised clip radius) — the old version rewrote
-          // border-radius + box-shadow + clip-path strings on EVERY frame, each a
-          // full-viewport repaint of the video overlay (the footer-lift lag).
           peelActive = true;
           const lp = Math.min(1, liftP * 2.5);
-          // Bottom corners round via the clip-path alone (it clips the composited
-          // video too, same as mobile); radius quantised to whole px so the clip
-          // mask updates ~44 times across the whole lift instead of every frame.
-          // The old per-frame inset box-shadow "ring" was painted BEHIND the
-          // opaque fullscreen video (inset shadows draw under children), so it
-          // was never visible — dropped outright.
+          // Bottom corners round via clip-path alone (quantised to whole px, so
+          // the clip mask updates ~44× across the lift, not every frame).
           const r = Math.max(er, Math.round(44 * lp));
           setClip(`inset(0 round ${er}px ${er}px ${r}px ${r}px)`);
           setOvTransform(
