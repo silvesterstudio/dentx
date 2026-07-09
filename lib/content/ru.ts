@@ -17,6 +17,7 @@ export const ru: Content = {
   },
   common: {
     callNow: "Позвонить",
+    contactUs: "Связаться",
     book: "Записаться",
     viewMore: "Подробнее",
     feedback: "Отзыв",

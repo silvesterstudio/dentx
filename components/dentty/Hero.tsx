@@ -1,7 +1,7 @@
 "use client";
 
 import { useContent } from "./LanguageProvider";
-import { CLINIC_TEL } from "@/lib/constants";
+import CallButton from "./CallButton";
 
 export default function Hero() {
   const t = useContent();
@@ -125,13 +125,15 @@ export default function Hero() {
             </span>
           </h1>
           <div className="hero-cta-reveal">
-            {/* Sole CTA is the phone call (booking form removed) — a white pill
-                matching the old CTA's prominence, linking to the clinic number. */}
-            <a
-              href={`tel:${CLINIC_TEL}`}
-              style={{
+            {/* Sole CTA (booking form removed) — a white pill. On desktop it opens
+                the contact popover (you can't dial from a desktop); on mobile it's
+                a tel: link. Shared with the header + contact CTAs. */}
+            <CallButton
+              wrapperStyle={{
                 pointerEvents: "auto",
                 marginTop: "clamp(22px, 2.6vw, 36px)",
+              }}
+              style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
@@ -143,12 +145,10 @@ export default function Hero() {
                 fontWeight: 600,
                 textDecoration: "none",
               }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />
-              </svg>
-              {t.common.callNow}
-            </a>
+              iconSize={18}
+              align="left"
+              dropUp
+            />
           </div>
         </div>
       </div>

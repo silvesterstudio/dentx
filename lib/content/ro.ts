@@ -17,6 +17,7 @@ export const ro: Content = {
   },
   common: {
     callNow: "Sună acum",
+    contactUs: "Contactează-ne",
     book: "Programează-te",
     viewMore: "Vezi mai mult",
     feedback: "Feedback",

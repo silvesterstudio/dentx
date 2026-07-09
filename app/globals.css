@@ -332,6 +332,15 @@ html.js-reveal #quote-tile.reveal {
   -webkit-backface-visibility: hidden;
 }
 
+/* Shared CallButton renders BOTH a desktop popover-trigger (button) and a mobile
+   tel: link — show the right one per width. Rendering both + toggling by CSS is
+   SSR-safe (no hydration flip) and lets the label differ ("Contactează-ne" on
+   desktop, "Sună acum" on mobile). !important beats the inline display each call
+   site sets. */
+.cta-call-mobile {
+  display: none !important;
+}
+
 /*
  * Mobile parity: phones run the SAME desktop layout AND scroll animations — the
  * sticky-stack + cover-blur, the Team horizontal sweep, the Servicii
@@ -352,8 +361,19 @@ html.js-reveal #quote-tile.reveal {
   #nav-call-mobile {
     display: flex !important;
   }
+  /* tighten the space between the quick-call icon and the burger on mobile */
+  .header-bar {
+    gap: 6px !important;
+  }
   .header-desktop-actions {
     display: none !important;
+  }
+  /* swap the CallButton to its mobile tel: variant (hero + contact CTAs) */
+  .cta-call-desktop {
+    display: none !important;
+  }
+  .cta-call-mobile {
+    display: inline-flex !important;
   }
 
   /* === Clinica on mobile: use the dedicated 2-column flex collage; hide the

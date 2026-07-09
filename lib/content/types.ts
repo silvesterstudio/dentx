@@ -13,6 +13,7 @@ export type Content = {
   };
   common: {
     callNow: string;
+    contactUs: string;
     book: string;
     viewMore: string;
     feedback: string;
