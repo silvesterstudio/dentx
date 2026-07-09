@@ -407,7 +407,6 @@ export default function Header({ showScrim = false }: { showScrim?: boolean }) {
               textDecoration: "none",
             }}
             iconSize={15}
-            align="right"
           />
         </div>
       </div>

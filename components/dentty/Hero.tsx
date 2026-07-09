@@ -146,8 +146,6 @@ export default function Hero() {
                 textDecoration: "none",
               }}
               iconSize={18}
-              align="left"
-              dropUp
             />
           </div>
         </div>

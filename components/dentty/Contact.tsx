@@ -38,7 +38,7 @@ export default function Contact() {
             <p style={SUB}>{t.booking.subtitle}</p>
           </div>
           <div className="reveal" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", transitionDelay: "0.1s" }}>
-            <CallButton style={CALL_BTN} iconSize={17} align="left" dropUp />
+            <CallButton style={CALL_BTN} iconSize={17} />
             {/* Entry to the review funnel (/feedback) — happy patients get routed
                 to Google, unhappy ones to a private form. White fill so it reads
                 as the primary action against the slate footer. */}
