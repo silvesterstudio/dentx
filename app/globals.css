@@ -716,16 +716,19 @@ html.js-reveal #quote-tile.reveal {
     font-size: clamp(15px, 4.2vw, 20px) !important;
   }
   /* before/after on mobile: lay the two photos SIDE BY SIDE (before | after) in a
-     WIDE card across the bottom. The desktop's tall before-OVER-after stack looked
+     WIDE card across the width. The desktop's tall before-OVER-after stack looked
      cramped and unfinished in the narrow phone column; a short wide card reads
-     clearly, fills the width, and clears the title + testimonial above it. */
+     clearly, fills the width, and clears the title + testimonial above it.
+     Anchored by TOP (just under the testimonial, centred in the lower half) rather
+     than pinned to the bottom edge — bottom-pinning on a tall phone left the card
+     orphaned at the very bottom with a huge dead gap under the testimonial. */
   .ov-ba-card {
     left: 50% !important;
     right: auto !important;
     width: min(92vw, 460px) !important;
     margin-left: calc(min(92vw, 460px) / -2) !important;
-    top: auto !important;
-    bottom: clamp(18px, 5vh, 40px) !important;
+    top: clamp(420px, 62vh, 680px) !important;
+    bottom: auto !important;
   }
   .ov-ba-card .ba-stack {
     flex-direction: row !important;
