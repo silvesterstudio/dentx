@@ -6,8 +6,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // /admin is password-gated and /api isn't a page — keep them out of the index.
-      disallow: ["/admin", "/api/"],
+      // /feedback is the private QR review landing (also noindex'd) and /api
+      // isn't a page — keep them out of the index.
+      disallow: ["/feedback", "/api/"],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,

@@ -7,9 +7,8 @@ import {
   waLink,
   viberLink,
 } from "@/lib/constants";
-import { useContent } from "./LanguageProvider";
+import { useLang } from "./LanguageProvider";
 import { WhatsAppIcon, ViberIcon } from "./Social";
-import BookingForm from "./BookingForm";
 
 const CALL_HREF = `tel:${CLINIC_TEL}`;
 const MAPS_LINK = "https://maps.app.goo.gl/?q=Dent-X+Chisinau";
@@ -19,7 +18,8 @@ const MAPS_LINK = "https://maps.app.goo.gl/?q=Dent-X+Chisinau";
 // to reveal it (handled in CaseStudies). z-index 5 so it sits above #work (z4)
 // but below the lifting video overlay (z6) — they're adjacent, never overlap.
 export default function Contact() {
-  const t = useContent();
+  const { t, lang } = useLang();
+  const reviewLabel = lang === "ru" ? "Оставить отзыв" : "Lasă o recenzie";
 
   return (
     <section id="contact" data-screen-label="Contact" style={SECTION}>
@@ -45,7 +45,15 @@ export default function Contact() {
               </svg>
               {t.common.callNow}
             </a>
-            <BookingForm />
+            {/* Entry to the review funnel (/feedback) — happy patients get routed
+                to Google, unhappy ones to a private form. White fill so it reads
+                as the primary action against the slate footer. */}
+            <a href="/feedback" style={REVIEW_BTN}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <path d="M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3-5.8 3 1.1-6.5L2.6 9.3l6.5-.9z" />
+              </svg>
+              {reviewLabel}
+            </a>
           </div>
         </div>
 
@@ -162,6 +170,20 @@ const CALL_BTN: React.CSSProperties = {
   background: "transparent",
   color: "#fbfbfb",
   border: "1px solid rgba(251,251,251,0.3)",
+  borderRadius: 999,
+  padding: "15px 26px",
+  fontSize: 15,
+  fontWeight: 600,
+  textDecoration: "none",
+};
+
+const REVIEW_BTN: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 10,
+  background: "#fbfbfb",
+  color: "#14191f",
+  border: "1px solid #fbfbfb",
   borderRadius: 999,
   padding: "15px 26px",
   fontSize: 15,

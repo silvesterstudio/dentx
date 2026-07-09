@@ -33,6 +33,13 @@ export const CLINIC_TEL = `+${CLINIC_PHONES[0].e164}`;
 export const waLink = (e164: string) => `https://wa.me/${e164}`;
 export const viberLink = (e164: string) => `viber://chat?number=%2B${e164}`;
 
+// Where 4–5★ reviewers on /feedback are sent to post publicly on Google.
+// This opens Dent-X's review dialog directly (star picker + text box), verified
+// live from the clinic's Place ID (ChIJzfKOXzp9yUARVuZl_-_AevA, derived from the
+// Maps CID 0xf07ac0efff65e656 in MAP_EMBED_SRC).
+export const GOOGLE_REVIEW_URL =
+  "https://search.google.com/local/writereview?placeid=ChIJzfKOXzp9yUARVuZl_-_AevA";
+
 // Google Maps embed for the clinic location.
 export const MAP_EMBED_SRC =
   "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d5437.445318810227!2d28.888667075693036!3d47.04567272654476!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40c97d3a5f8ef2cd%3A0xf07ac0efff65e656!2sDent-X!5e0!3m2!1sen!2s!4v1781331008966!5m2!1sen!2s";
