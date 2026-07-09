@@ -44,6 +44,10 @@ export default function DenttyHome() {
     // Assign the blurred image on desktop up front so it's downloaded + decoded
     // long before the first scroll frame needs to fade it in.
     if (blurImg && !mq.matches && !blurImg.getAttribute("src")) {
+      // Low network priority: it's only needed once the user scrolls into
+      // Clinica, so it must not compete with the sharp hero photo + fonts
+      // during the intro reveal.
+      blurImg.setAttribute("fetchpriority", "low");
       blurImg.src = BLUR_SRC;
     }
 
@@ -79,6 +83,56 @@ export default function DenttyHome() {
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
       if (blurImg) blurImg.style.opacity = "0";
+    };
+  }, []);
+
+  // FIRST-PASS WARM (desktop only). Both remaining lag reports (the Servicii→
+  // expand stretch and the footer lift) shared one signature: scroll to the
+  // bottom once, scroll again → smooth. That's cold-cache work — images
+  // downloading + decoding and the clip streaming DURING the first scroll (and
+  // this page scrolls on the main thread via the wheel-lerp, so every decode/
+  // network burst is a visible hitch). So during idle time shortly after load,
+  // download + decode every image on the page and pull the whole Cazuri clip
+  // into the HTTP cache — the first real scroll-through then behaves like the
+  // user's already-smooth second pass. Skipped ≤980px: phones shouldn't pay
+  // ~10MB of data for a desktop-only issue (mobile scroll is confirmed good).
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 980px)").matches) return;
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    let idleId: number | undefined;
+    const run = () => {
+      document.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
+        try {
+          // promote next/image's native lazy-loading so the download starts now
+          if (img.loading === "lazy") img.loading = "eager";
+          // decode() waits for the download, then decodes OFF-screen — nothing
+          // is left to decode-on-first-paint in the middle of a scroll frame.
+          if (typeof img.decode === "function") img.decode().catch(() => {});
+        } catch {
+          /* best-effort */
+        }
+      });
+      // Fully buffer the clip so fullscreen playback + the Contact lift never
+      // wait on streaming during the first pass.
+      fetch("/video-card.mp4").catch(() => {});
+    };
+    // Scheduled AFTER the hero intro and after CaseStudies' 2.6s-gated warm-up
+    // has had first claim on idle time (it covers the bento + overlay photos,
+    // the assets the user reaches first).
+    const timer = window.setTimeout(() => {
+      idleId = w.requestIdleCallback
+        ? w.requestIdleCallback(run, { timeout: 4000 })
+        : (window.setTimeout(run, 800) as unknown as number);
+    }, 3400);
+    return () => {
+      clearTimeout(timer);
+      if (idleId !== undefined) {
+        if (w.requestIdleCallback && w.cancelIdleCallback) w.cancelIdleCallback(idleId);
+        else clearTimeout(idleId);
+      }
     };
   }, []);
 

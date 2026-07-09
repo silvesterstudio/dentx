@@ -197,6 +197,10 @@ export default function Team() {
                         src={PHOTOS[i].desktop}
                         alt={m.name}
                         decoding="async"
+                        // low network priority: all 6 big photos start
+                        // downloading at page load and were competing with the
+                        // hero photo + fonts during the intro reveal
+                        fetchPriority="low"
                         style={{
                           position: "absolute",
                           inset: 0,

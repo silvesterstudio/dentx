@@ -27,6 +27,15 @@ export default function HeroIntro() {
   useEffect(() => {
     const root = document.documentElement;
     if (!root.classList.contains("intro-pre")) return; // reduced motion → nothing staged
+    // Keep the reveal's layers promoted for the whole play (globals.css puts
+    // will-change on the hero image/title/CTA under intro-anim). Without it the
+    // browser rasterises the full-viewport hero photo into a fresh compositor
+    // layer on the transition's FIRST frame — right when hydration has the main
+    // thread busiest — which is what made the "simple" intro stutter. Dropped
+    // after the longest transition (1.5s) ends so no permanent fullscreen
+    // layers stick around.
+    root.classList.add("intro-anim");
+    const tidy = window.setTimeout(() => root.classList.remove("intro-anim"), 2600);
     let raf2 = 0;
     const raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => root.classList.remove("intro-pre"));
@@ -34,7 +43,9 @@ export default function HeroIntro() {
     return () => {
       cancelAnimationFrame(raf1);
       if (raf2) cancelAnimationFrame(raf2);
+      clearTimeout(tidy);
       root.classList.remove("intro-pre");
+      root.classList.remove("intro-anim");
     };
   }, []);
 

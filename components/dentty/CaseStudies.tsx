@@ -65,6 +65,127 @@ export default function CaseStudies() {
       words: Array.from(block.querySelectorAll<HTMLElement>(".oq-word")),
       author: block.querySelector<HTMLElement>(".oq-author"),
     }));
+    // The driven sections are stable DOM for this effect's lifetime (a language
+    // switch re-runs the effect) — resolve them once, not 4× per scroll frame.
+    const tile = document.getElementById("quote-tile");
+    const services = document.getElementById("services");
+    const contact = document.getElementById("contact");
+    const mobileStage = document.getElementById("services-stage");
+    if (!tile || !services) return;
+
+    // --- per-frame write guards -------------------------------------------
+    // The conveyor/lift math recomputes every card/word/author opacity on every
+    // scroll frame, but the VALUES only change for the one case currently in its
+    // window — the rest re-wrote identical strings (~150 CSSOM writes/frame,
+    // each a potential style invalidation). Cache the last written value per
+    // node and skip no-op writes. Caches (not style read-backs) because CSS
+    // serialisation trims numbers ("140.00%" → "140%"), so a read-back compare
+    // would never match and we'd rewrite every frame anyway. Initialised from
+    // the current inline styles so a language-switch re-run stays in sync with
+    // whatever the previous effect instance left in the DOM.
+    const cardLast = ovCards.map((c) => ({ t: c.style.transform, o: c.style.opacity }));
+    const blockLast = ovBlockData.map((d) => ({
+      o: d.block.style.opacity,
+      a: d.author ? d.author.style.opacity : "",
+      w: d.words.map((w) => w.style.opacity),
+    }));
+    let lastOvT = overlay.style.transform;
+    let lastOvO = overlay.style.opacity;
+    let lastClip = overlay.style.clipPath;
+    let lastGradOp = ovGrad ? ovGrad.style.opacity : "";
+    let lastCapOp = ovCaption ? ovCaption.style.opacity : "";
+    const setCard = (k: number, transform: string, opacity: string) => {
+      const s = cardLast[k];
+      if (s.t !== transform) {
+        s.t = transform;
+        ovCards[k].style.transform = transform;
+      }
+      if (s.o !== opacity) {
+        s.o = opacity;
+        ovCards[k].style.opacity = opacity;
+      }
+    };
+    const setBlockOp = (k: number, v: string) => {
+      if (blockLast[k].o !== v) {
+        blockLast[k].o = v;
+        ovBlockData[k].block.style.opacity = v;
+      }
+    };
+    const setAuthorOp = (k: number, v: string) => {
+      const a = ovBlockData[k].author;
+      if (a && blockLast[k].a !== v) {
+        blockLast[k].a = v;
+        a.style.opacity = v;
+      }
+    };
+    const setWordOp = (k: number, i: number, v: string) => {
+      const arr = blockLast[k].w;
+      if (arr[i] !== v) {
+        arr[i] = v;
+        ovBlockData[k].words[i].style.opacity = v;
+      }
+    };
+    const setOvTransform = (v: string) => {
+      if (lastOvT !== v) {
+        lastOvT = v;
+        overlay.style.transform = v;
+      }
+    };
+    const setOvOpacity = (v: string) => {
+      if (lastOvO !== v) {
+        lastOvO = v;
+        overlay.style.opacity = v;
+      }
+    };
+    const setClip = (v: string) => {
+      if (lastClip !== v) {
+        lastClip = v;
+        overlay.style.clipPath = v;
+      }
+    };
+    const setGradOp = (v: string) => {
+      if (ovGrad && lastGradOp !== v) {
+        lastGradOp = v;
+        ovGrad.style.opacity = v;
+      }
+    };
+    const setCapOp = (v: string) => {
+      if (ovCaption && lastCapOp !== v) {
+        lastCapOp = v;
+        ovCaption.style.opacity = v;
+      }
+    };
+    // Geometry is written as whole-px strings ("123px"), which round-trip
+    // exactly through the CSSOM — so the inline style itself is the cache
+    // (reading .style never forces layout).
+    const setPx = (prop: "left" | "top" | "width" | "height", px: number) => {
+      const v = px + "px";
+      if (overlay.style[prop] !== v) overlay.style[prop] = v;
+    };
+    // Per-frame counter-transforms for the static-size morph (see update()).
+    // The video element is re-sized ONCE to the source-aspect cover box; whole-px
+    // strings round-trip the CSSOM exactly, so the style is its own cache.
+    const setVidPx = (prop: "width" | "height", px: number) => {
+      const v = px + "px";
+      if (ovVideo && ovVideo.style[prop] !== v) ovVideo.style[prop] = v;
+    };
+    let lastVidT = ovVideo ? ovVideo.style.transform : "";
+    let lastGradT = ovGrad ? ovGrad.style.transform : "";
+    const setVideoT = (v: string) => {
+      if (ovVideo && lastVidT !== v) {
+        lastVidT = v;
+        ovVideo.style.transform = v;
+      }
+    };
+    const setGradT = (v: string) => {
+      if (ovGrad && lastGradT !== v) {
+        lastGradT = v;
+        ovGrad.style.transform = v;
+      }
+    };
+    // the counter-transform maths assume a top-left origin on both layers
+    if (ovVideo) ovVideo.style.transformOrigin = "0 0";
+    if (ovGrad) ovGrad.style.transformOrigin = "0 0";
 
     // Once the overlay is reset (Servicii not active) there's nothing to update
     // until it activates again — but `update` still fires every scroll frame
@@ -83,28 +204,24 @@ export default function CaseStudies() {
     // rising. This tracks whether it's currently written so the pure-expand phase
     // can clear it ONCE instead of re-writing neutral values every scroll frame.
     let peelActive = false;
-    // The rounded-corner radius `er` animates 18→0 but, rounded to whole px, takes
-    // only ~19 distinct values across the WHOLE expand — yet the old code rewrote
-    // borderRadius + the clip-path string (a genuine per-frame re-clip/raster of the
-    // fullscreen overlay) on EVERY scroll frame. Cache the last radius so those
-    // writes happen only on the ~19 frames the corner actually changes. This is the
-    // biggest per-frame saving in the pure-expand phase the user feels as lag.
-    let lastEr = -1;
     const reset = (tile: HTMLElement) => {
       if (settledInactive) return;
       settledInactive = true;
       conveyorIdle = false;
       ovVideo?.pause(); // back to a still frame when the overlay isn't in play
       overlay.style.display = "none";
-      overlay.style.clipPath = "";
+      setClip("");
       // clear the desktop peel flourish so a later re-expand starts neutral
       peelActive = false;
-      lastEr = -1; // force the corner radius + clip-path to reapply on re-expand
-      overlay.style.transform = "";
-      overlay.style.boxShadow = "";
-      overlay.style.opacity = "";
-      overlay.style.borderBottomLeftRadius = "";
-      overlay.style.borderBottomRightRadius = "";
+      setOvTransform("");
+      setOvOpacity("");
+      setVideoT("");
+      setGradT("");
+      // back to the JSX inset:0/100% sizing while the overlay is parked
+      if (ovVideo) {
+        ovVideo.style.width = "";
+        ovVideo.style.height = "";
+      }
       tile.style.visibility = "";
       // release the mobile fixed-position pin (the stage returns to normal flow).
       // removeProperty so the !important-priority inline values set on pin-enter are
@@ -113,32 +230,23 @@ export default function CaseStudies() {
       // height are React INLINE styles (Services.tsx) — clearing them here would
       // strip the desktop pin (React won't re-apply, so the expand would never run).
       if (mq.matches) {
-        const stage = document.getElementById("services-stage");
-        if (stage) {
-          stage.style.removeProperty("position");
-          stage.style.removeProperty("left");
-          stage.style.removeProperty("right");
-          stage.style.removeProperty("bottom");
-          stage.style.removeProperty("top");
-          stage.style.removeProperty("width");
+        if (mobileStage) {
+          mobileStage.style.removeProperty("position");
+          mobileStage.style.removeProperty("left");
+          mobileStage.style.removeProperty("right");
+          mobileStage.style.removeProperty("bottom");
+          mobileStage.style.removeProperty("top");
+          mobileStage.style.removeProperty("width");
         }
-        const svc = document.getElementById("services");
-        if (svc) svc.style.removeProperty("height"); // drop the height lock taken on pin-enter
+        services.style.removeProperty("height"); // drop the height lock taken on pin-enter
       }
       if (backdropRef.current) backdropRef.current.style.opacity = "0";
       ovCaption?.classList.remove("play");
-      ovCards.forEach((c) => {
-        c.style.transform = "translateY(140%)";
-        c.style.opacity = "0";
-      });
+      ovCards.forEach((_, k) => setCard(k, "translateY(140%)", "0"));
     };
 
     const update = () => {
       raf = 0;
-      const tile = document.getElementById("quote-tile");
-      const services = document.getElementById("services");
-      if (!tile || !services) return;
-
       const vh = window.innerHeight || 1;
       // clientWidth EXCLUDES the vertical scrollbar; innerWidth includes it, which
       // would push the card's right edge (and its rounded corner) under the
@@ -157,7 +265,6 @@ export default function CaseStudies() {
       // like the earlier translateY had), locking #services' height first so taking
       // the stage out of flow doesn't collapse the page. We track the pin window
       // from the section's BOTTOM edge — #services has padding-bottom = ROOM.
-      const mobileStage = document.getElementById("services-stage");
       const sr = services.getBoundingClientRect();
       let scroll0: number;
       let expandDist: number;
@@ -185,7 +292,7 @@ export default function CaseStudies() {
         clearTimeout(warmSettle);
         warmSettle = 0;
       }
-      if (overlay.style.opacity === "0.001") overlay.style.opacity = "";
+      if (lastOvO === "0.001") setOvOpacity("");
 
       // MOBILE PIN: the instant we enter the window (bento bottom at screen bottom),
       // FREEZE the stage at the viewport bottom with position:fixed. Lock the
@@ -214,7 +321,8 @@ export default function CaseStudies() {
 
       // No dark backdrop needed: the bento PINS on both widths now, so the video
       // expands OVER the frozen bento (just like desktop) — no white gaps to hide.
-      if (backdropRef.current) backdropRef.current.style.opacity = "0";
+      const bd = backdropRef.current;
+      if (bd && bd.style.opacity !== "0") bd.style.opacity = "0";
 
       // The clip is FROZEN on a still frame (paused — cheap to just scale) for the
       // WHOLE expand and only starts playing once it's essentially fullscreen.
@@ -234,29 +342,67 @@ export default function CaseStudies() {
       }
 
       // End-of-Cazuri → Contact hand-off (BOTH widths reveal Contact, which sits
-      // BENEATH the overlay at z5 < z6): desktop lifts via `top` + a peel-up
-      // flourish; mobile lifts via a cheap GPU `translateY`. See the branch below.
-      const contact = document.getElementById("contact");
+      // BENEATH the overlay at z5 < z6): both widths lift via a cheap GPU
+      // `translateY` (desktop adds the peel-up flourish). See the branch below.
       const contactTop = contact ? contact.getBoundingClientRect().top : vh;
       const lift = Math.min(0, contactTop - vh); // 0 → -vh as Contact rises in
       const liftP = clamp01((vh - contactTop) / vh);
 
       // expand from the tile's own (pinned) rect → fullscreen by p, on both widths.
       const srcTop = qr.top;
-      tile.style.visibility = "hidden";
-      overlay.style.display = "block";
-      // Round to whole px: sub-pixel width/height changes still trigger a full
-      // layout recalc, so snapping to integers means many scroll frames land on the
-      // same value and skip the work entirely (imperceptible during a morph).
-      overlay.style.left = Math.round(lerp(qr.left, 0, p)) + "px";
-      overlay.style.width = Math.round(lerp(qr.width, vw, p)) + "px";
-      overlay.style.height = Math.round(lerp(qr.height, vh, p)) + "px";
-      // all corners share the expand radius (rounded tile → square fullscreen)…
+      if (tile.style.visibility !== "hidden") tile.style.visibility = "hidden";
+      if (overlay.style.display !== "block") overlay.style.display = "block";
+      // STATIC-SIZE MORPH. The overlay box is parked at FULLSCREEN for the whole
+      // expand (these four writes are no-ops after the first frame) and the
+      // tile→fullscreen window is carved out of it per frame with clip-path,
+      // while the video + gradient are counter-transformed so the window's
+      // content is pixel-identical to the old width/height-animated box. Why:
+      // the old morph resized a promoted (will-change: transform) fullscreen
+      // layer every frame, forcing the GPU to re-allocate and re-rasterise the
+      // overlay's and gradient's textures on every scroll frame — the residual
+      // expand lag that survived the cache warm-ups. clip-path and transform
+      // updates are compositor-side: NOTHING re-rasterises during the morph.
+      setPx("left", 0);
+      setPx("top", 0);
+      setPx("width", vw);
+      setPx("height", vh);
+      // the reveal window, quantised to whole px like the old geometry
+      const wx = Math.round(lerp(qr.left, 0, p));
+      const wy = Math.round(lerp(srcTop, 0, p));
+      const ww = Math.max(1, Math.round(lerp(qr.width, vw, p)));
+      const wh = Math.max(1, Math.round(lerp(qr.height, vh, p)));
+      // all corners share the expand radius (rounded tile → square fullscreen)
       const er = Math.round(lerp(18, 0, p));
-      // only touch the corner radius / clip-path on frames where it actually
-      // changed (≈19 frames total, not every frame — see lastEr note above).
-      const erChanged = er !== lastEr;
-      if (erChanged) overlay.style.borderRadius = er + "px";
+      // Counter-map the video onto the window so it renders exactly as
+      // object-fit:cover WITHIN the window (what the old resizing box showed).
+      // The element is parked at the SOURCE aspect ratio at fullscreen-cover
+      // size (so the FULL source is available — a viewport-cropped element
+      // couldn't show the extra height/width a differently-shaped window's
+      // cover-crop needs), then per frame a uniform scale
+      // k = coverScale(window)/coverScale(fullscreen) with aligned centres
+      // reproduces the window's cover-crop exactly; the overlay clip-path does
+      // the cropping. Constant at p=1, so the setter caches skip the writes
+      // through the whole conveyor + lift.
+      const ar = ovVideo && ovVideo.videoWidth > 0 ? ovVideo.videoWidth / ovVideo.videoHeight : 16 / 9;
+      const coverW = Math.round(Math.max(vw, vh * ar));
+      const coverH = Math.round(Math.max(vh, vw / ar));
+      setVidPx("width", coverW); // layout writes only on resize / metadata load
+      setVidPx("height", coverH);
+      const k = Math.max(ww / coverW, wh / coverH);
+      setVideoT(
+        `translate(${(wx + (ww - k * coverW) / 2).toFixed(1)}px, ${(wy + (wh - k * coverH) / 2).toFixed(1)}px) scale(${k.toFixed(4)})`,
+      );
+      // The gradient stretched with the box in the old version — a non-uniform
+      // scale of the fullscreen-sized layer renders the same gradient at window
+      // size (linear gradients scale linearly). Identity at p=1 as well.
+      setGradT(
+        ww === vw && wh === vh && wx === 0 && wy === 0
+          ? ""
+          : `translate(${wx}px, ${wy}px) scale(${(ww / vw).toFixed(4)}, ${(wh / vh).toFixed(4)})`,
+      );
+      // clip-path clips the composited video layer too (why the corners need no
+      // border-radius); setClip's string cache dedups identical frames.
+      const windowClip = `inset(${wy}px ${vw - wx - ww}px ${vh - wy - wh}px ${wx}px round ${er}px)`;
 
       if (mq.matches) {
         // MOBILE: reveal Contact by sliding the fullscreen video UP with a cheap
@@ -266,67 +412,59 @@ export default function CaseStudies() {
         // this instead of the old "Contact slides OVER via z-index" trick, which
         // relied on a portaled fixed overlay's stacking order and silently failed
         // on real mobile browsers — leaving Contact hidden ("page ends at Cazuri").
-        overlay.style.top = Math.round(lerp(srcTop, 0, p)) + "px";
         // EXACT tracking: the video's bottom edge sits right on Contact's top edge
         // (no multiplier) so there's no empty slate band between them. Contact is
         // ≥100vh tall (globals.css) so contactTop reaches 0 and the video clears
         // the screen fully at the bottom.
-        overlay.style.transform = `translateY(${Math.max(-vh, lift).toFixed(1)}px)`;
-        overlay.style.boxShadow = "";
-        overlay.style.borderBottomLeftRadius = "";
-        overlay.style.borderBottomRightRadius = "";
-        overlay.style.opacity = "";
-        // A PLAYING <video> renders on a hardware layer that ignores border-radius +
-        // overflow:hidden on mobile, so its corners stayed SHARP during the expand.
-        // clip-path clips composited layers too — round all four corners by `er`.
-        if (erChanged) overlay.style.clipPath = `inset(0 round ${er}px)`;
+        setOvTransform(`translateY(${Math.max(-vh, lift).toFixed(1)}px)`);
+        setOvOpacity("");
+        setClip(windowClip);
       } else {
-        // DESKTOP: lift via top + the "peel up" shrink/round/shadow/fade flourish
+        // DESKTOP: the "peel up" lift — translateY + shrink/round/fade flourish
         // (corners + shrink share the same normalised lift progress).
-        overlay.style.top = Math.round(lerp(srcTop, 0, p) + lift) + "px";
         if (liftP > 0) {
-          // Contact is rising in → run the full flourish per frame.
+          // Contact is rising in → run the flourish. Everything here is either
+          // compositor-only (transform/opacity) or written only on the frames it
+          // visibly changes (the quantised clip radius) — the old version rewrote
+          // border-radius + box-shadow + clip-path strings on EVERY frame, each a
+          // full-viewport repaint of the video overlay (the footer-lift lag).
           peelActive = true;
           const lp = Math.min(1, liftP * 2.5);
-          const r = Math.max(er, 44 * lp).toFixed(1) + "px";
-          overlay.style.borderBottomLeftRadius = r;
-          overlay.style.borderBottomRightRadius = r;
-          // clip-path so the playing video is actually clipped to the corners (top
-          // corners = er, bottom corners = the bigger peel radius r).
-          overlay.style.clipPath = `inset(0 round ${er.toFixed(1)}px ${er.toFixed(1)}px ${r} ${r})`;
-          overlay.style.boxShadow = `inset 0 0 0 1.5px rgba(255,255,255,${(0.4 * lp).toFixed(2)})`;
-          overlay.style.transform = `scale(${(1 - 0.05 * lp).toFixed(4)})`;
-          overlay.style.opacity = liftP > 0.5
-            ? Math.max(0, 1 - (liftP - 0.5) * 2).toFixed(3)
-            : "";
+          // Bottom corners round via the clip-path alone (it clips the composited
+          // video too, same as mobile); radius quantised to whole px so the clip
+          // mask updates ~44 times across the whole lift instead of every frame.
+          // The old per-frame inset box-shadow "ring" was painted BEHIND the
+          // opaque fullscreen video (inset shadows draw under children), so it
+          // was never visible — dropped outright.
+          const r = Math.max(er, Math.round(44 * lp));
+          setClip(`inset(0 round ${er}px ${er}px ${r}px ${r}px)`);
+          setOvTransform(
+            `translateY(${lift.toFixed(1)}px) scale(${(1 - 0.05 * lp).toFixed(4)})`,
+          );
+          setOvOpacity(
+            liftP > 0.5 ? Math.max(0, 1 - (liftP - 0.5) * 2).toFixed(3) : "",
+          );
         } else {
-          // PURE EXPAND (Contact not yet rising): uniform `er` corners. The clip-path
-          // is only rewritten when the rounded radius changes (≈19 frames), OR once
-          // when we drop back out of the lift phase (peelActive) — where the clip
-          // string held the bigger peel radius and must be reset to uniform `er`.
-          if (erChanged || peelActive) overlay.style.clipPath = `inset(0 round ${er}px)`;
+          // PURE EXPAND (Contact not yet rising): the window clip. Dropping back
+          // out of the lift (peelActive) restores the neutral transform/opacity.
+          setClip(windowClip);
           if (peelActive) {
             peelActive = false;
-            overlay.style.borderBottomLeftRadius = "";
-            overlay.style.borderBottomRightRadius = "";
-            overlay.style.boxShadow = "";
-            overlay.style.transform = "";
-            overlay.style.opacity = "";
+            setOvTransform("");
+            setOvOpacity("");
           }
         }
       }
-
-      lastEr = er; // remember this frame's radius so the next can skip unchanged writes
 
       // fade the case content out as the card lifts, so the rising video is clean.
       const sf = 1 - liftP;
       // also fade the video's heavy bottom gradient so the bright clinic footage
       // shows at the edge — that contrast makes the rounding corners read clearly.
-      if (ovGrad) ovGrad.style.opacity = liftP > 0 ? Math.max(0.15, 1 - liftP * 2).toFixed(3) : "";
+      setGradOp(liftP > 0 ? Math.max(0.15, 1 - liftP * 2).toFixed(3) : "");
 
       // title reveal (CSS-timed); fade out during the lift.
       ovCaption?.classList.toggle("play", p >= 0.9);
-      if (ovCaption) ovCaption.style.opacity = liftP > 0 ? sf.toFixed(3) : "";
+      setCapOp(liftP > 0 ? sf.toFixed(3) : "");
 
       // conveyor of cases — strict SEQUENCE per case (scroll-scrubbed): card
       // rises UP from the bottom → STOPS at centre → testimonial reveals
@@ -349,8 +487,7 @@ export default function CaseStudies() {
         if (!conveyorIdle) {
           conveyorIdle = true;
           for (let k = 0; k < n; k++) {
-            cards[k].style.transform = "translateY(140%)";
-            cards[k].style.opacity = "0";
+            setCard(k, "translateY(140%)", "0");
             // display:none the before/after glass cards + quote blocks for the WHOLE
             // morph. They're already invisible here (off-screen + opacity 0), but
             // while merely parked they stay in the layout tree — so every frame the
@@ -361,10 +498,10 @@ export default function CaseStudies() {
             cards[k].style.display = "none";
             const data = ovBlockData[k];
             if (!data) continue;
-            data.block.style.opacity = "0";
+            setBlockOp(k, "0");
             data.block.style.display = "none";
-            data.words.forEach((w) => (w.style.opacity = "0"));
-            if (data.author) data.author.style.opacity = "0";
+            data.words.forEach((_, i) => setWordOp(k, i, "0"));
+            setAuthorOp(k, "0");
           }
         }
         return;
@@ -389,25 +526,25 @@ export default function CaseStudies() {
         else if (localK < move + hold) ty = 0;
         else if (!isLast) ty = -clamp01((localK - (move + hold)) / moveOut) * 200;
         else ty = 0;
-        const card = cards[k];
-        card.style.transform = `translateY(${ty.toFixed(2)}%)`;
         const fadeIn = clamp01(localK / (move * 0.5));
         const fadeOut = isLast ? 1 : clamp01((move + hold + moveOut - localK) / moveOut);
-        card.style.opacity = String((localK <= 0 ? 0 : Math.min(fadeIn, fadeOut)) * sf);
+        setCard(
+          k,
+          `translateY(${ty.toFixed(2)}%)`,
+          String((localK <= 0 ? 0 : Math.min(fadeIn, fadeOut)) * sf),
+        );
 
         const data = ovBlockData[k];
         if (!data) continue;
-        const { block, words: ws, author } = data;
+        const ws = data.words;
         const bIn = clamp01((localK - move * 0.6) / (move * 0.5));
         const bOut = isLast ? 1 : clamp01((move + hold + moveOut * 0.6 - localK) / (moveOut * 0.6));
-        block.style.opacity = String((localK <= 0 ? 0 : Math.min(bIn, bOut)) * sf);
+        setBlockOp(k, String((localK <= 0 ? 0 : Math.min(bIn, bOut)) * sf));
         // words reveal ONLY during the Hold (i.e. after the card has stopped)
         const tp = clamp01((localK - move) / hold);
         const head = tp * (ws.length + 4);
-        ws.forEach((w, i) => {
-          w.style.opacity = String(clamp01(head - i));
-        });
-        if (author) author.style.opacity = String(clamp01((tp - 0.9) / 0.1));
+        for (let i = 0; i < ws.length; i++) setWordOp(k, i, String(clamp01(head - i)));
+        setAuthorOp(k, String(clamp01((tp - 0.9) / 0.1)));
       }
     };
 
@@ -452,17 +589,31 @@ export default function CaseStudies() {
           /* ignore — best-effort warm-up */
         }
       });
+      // Same guarantee for the overlay's before/after photos. The on-screen
+      // flash below only kicks off their lazy downloads — if the network takes
+      // longer than the 500ms hold, the bitmaps used to arrive AFTER the park
+      // and were then decoded mid-conveyor on first paint (the "first pass
+      // through Cazuri lags, second is smooth" report). decode() waits for the
+      // download to finish and then decodes off-screen, however long it takes.
+      overlay.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
+        try {
+          img.loading = "eager";
+          if (typeof img.decode === "function") img.decode().catch(() => {});
+        } catch {
+          /* ignore — best-effort warm-up */
+        }
+      });
       // already live (deep link straight into the expand) — the overlay is in play,
       // so skip the (invisible) overlay/card warm-up below; the bento is warmed above.
       if (!settledInactive) return;
       const vw2 = document.documentElement.clientWidth || 1;
       const vh2 = window.innerHeight || 1;
       overlay.style.display = "block";
-      overlay.style.opacity = "0.001";
-      overlay.style.left = "0px";
-      overlay.style.top = "0px";
-      overlay.style.width = vw2 + "px";
-      overlay.style.height = vh2 + "px";
+      setOvOpacity("0.001");
+      setPx("left", 0);
+      setPx("top", 0);
+      setPx("width", vw2);
+      setPx("height", vh2);
       if (ovVideo) {
         const pr = ovVideo.play();
         if (pr && typeof pr.then === "function") {
@@ -478,22 +629,18 @@ export default function CaseStudies() {
       // opacity, so we can bring the cards fully on-screen with no visible flash —
       // that makes next/image's IntersectionObserver fire (kicking off the image
       // downloads + decodes) and forces the blur layers to rasterise once.
-      ovCards.forEach((c) => {
+      ovCards.forEach((c, k) => {
         c.style.display = "";
-        c.style.transform = "translateY(0)";
-        c.style.opacity = "1";
+        setCard(k, "translateY(0)", "1");
       });
       ovBlockData.forEach((d) => {
         d.block.style.display = "";
       });
       const park = () => {
         warmSettle = 0;
-        overlay.style.opacity = "";
+        setOvOpacity("");
         // return the cards to the parked (reset) state — decoded + cached now.
-        ovCards.forEach((c) => {
-          c.style.transform = "translateY(140%)";
-          c.style.opacity = "0";
-        });
+        ovCards.forEach((_, k) => setCard(k, "translateY(140%)", "0"));
         if (settledInactive) {
           overlay.style.display = "none";
           overlay.style.left = "";
@@ -512,16 +659,29 @@ export default function CaseStudies() {
       );
     };
     const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
-    const warmId = ric ? ric(warmUp, { timeout: 4000 }) : window.setTimeout(warmUp, 2500);
+    // Don't even SCHEDULE the idle warm-up until the hero intro reveal has fully
+    // played out: requestIdleCallback happily grants idle time within the first
+    // second of a fast load, so the warm-up's cold work (video-decoder init,
+    // ~20 image decodes, first backdrop-blur rasters) used to land right in the
+    // middle of the intro transitions — a big part of the "simple hero intro
+    // lags" jank. 2.6s > the ~1.8s reveal, and nobody can scroll from the hero
+    // to Servicii faster than the warm-up completes after that.
+    let warmId: number | undefined;
+    const warmDelay = window.setTimeout(() => {
+      warmId = ric ? ric(warmUp, { timeout: 2500 }) : window.setTimeout(warmUp, 1500);
+    }, 2600);
 
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
       if (warmSettle) clearTimeout(warmSettle);
+      clearTimeout(warmDelay);
       const cic = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
-      if (ric && cic) cic(warmId as number);
-      else clearTimeout(warmId as number);
+      if (warmId !== undefined) {
+        if (ric && cic) cic(warmId);
+        else clearTimeout(warmId);
+      }
     };
     // `t` is a dep so that on a language switch the effect re-resolves the
     // overlay's word/quote/card nodes (their text — and word count — changed) and

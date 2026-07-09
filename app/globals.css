@@ -173,6 +173,21 @@ html.intro-pre .hero-cta-reveal {
   transform: translateY(20px);
 }
 
+/* Pre-promote the intro's animated layers for the duration of the reveal.
+   Without this the compositor layers are created (and the full-viewport hero
+   photo is rasterised at scale 1.12) on the transition's very first frames —
+   exactly when hydration has the main thread busiest — which made the intro
+   stutter. `intro-anim` is held by HeroIntro only while the reveal plays, then
+   dropped so none of these stay permanent fullscreen layers. */
+html.intro-pre .hero-img-reveal,
+html.intro-anim .hero-img-reveal,
+html.intro-pre .hero-reveal-line > span,
+html.intro-anim .hero-reveal-line > span,
+html.intro-pre .hero-cta-reveal,
+html.intro-anim .hero-cta-reveal {
+  will-change: transform, opacity;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-reveal-line > span,
   .hero-img-reveal,
@@ -277,6 +292,44 @@ html.js-reveal #quote-tile.reveal {
   /* the morph rewrites top/left/width/height every frame — keeping the overlay
      promoted means the browser rasterizes it once and just re-composites. */
   will-change: transform;
+}
+/* The overlay's fullscreen gradient + caption get their OWN compositor layers:
+   both have their opacity scrubbed per scroll frame during the Contact lift,
+   and without promotion each of those writes repainted a full-viewport element
+   every frame (a big slice of the footer-transition lag). The layers only
+   exist while the overlay is displayed, so this costs nothing the rest of the
+   time. */
+#cazuri-overlay .ov-caption {
+  will-change: opacity;
+}
+/* The gradient also gets a per-frame counter-transform during the static-size
+   morph (it stays fullscreen-sized and is scaled down onto the reveal window). */
+#cazuri-overlay .ov-grad {
+  will-change: opacity, transform;
+}
+/* While the caption isn't playing it is fully invisible anyway (rule at
+   scaleX(0), title spans hidden behind the overflow mask) — but it was still
+   being laid out and painted on EVERY frame of the expand as the overlay
+   resized around it. Skip that work outright. The 0.8s delay keeps the retract
+   animation intact when scrolling back out of Cazuri: the spans slide away
+   first (0.65s), THEN the caption goes visibility:hidden. */
+#cazuri-overlay .ov-caption:not(.play) {
+  visibility: hidden;
+  transition: visibility 0s linear 0.8s;
+}
+
+/* Team sweep, ALL widths (this was mobile-only, but desktop pays the same
+   cost): give each panel its own compositor layer and contain its paint.
+   Otherwise the 6-panel strip (will-change: transform) is ONE layer ~6
+   viewports wide that the GPU must hold and re-tile as it sweeps and as
+   Servicii scrolls in over it. Per-panel layers keep each texture at most one
+   viewport wide and let off-screen panels skip rasterisation entirely. Purely
+   a compositing hint — layout and visuals are untouched. */
+.team-panel {
+  contain: layout paint;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /*

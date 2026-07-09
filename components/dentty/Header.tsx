@@ -112,8 +112,11 @@ export default function Header({ showScrim = false }: { showScrim?: boolean }) {
   useEffect(() => {
     const ids = NAV.map((n) => n.href.slice(1)); // "#home" -> "home"
     let raf = 0;
+    let timer = 0;
+    let lastRun = 0;
     const update = () => {
       raf = 0;
+      lastRun = performance.now();
       const vh = window.innerHeight || 1;
       const line = vh * 0.35;
       let idx = 0;
@@ -128,8 +131,22 @@ export default function Header({ showScrim = false }: { showScrim?: boolean }) {
       if (window.scrollY >= max - vh * 0.35) idx = ids.length - 1;
       setActive((prev) => (prev === idx ? prev : idx));
     };
+    // Throttled to ~6 checks/s (with a trailing run so it always settles on the
+    // right section). A nav highlight doesn't need per-frame accuracy, and the
+    // un-throttled version measured EIGHT section rects on every scroll frame —
+    // right after the other scroll handlers had written styles, forcing extra
+    // full-page layouts during the heavy scrubbed animations.
     const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update);
+      if (raf || timer) return;
+      const wait = 160 - (performance.now() - lastRun);
+      if (wait <= 0) {
+        raf = requestAnimationFrame(update);
+      } else {
+        timer = window.setTimeout(() => {
+          timer = 0;
+          raf = requestAnimationFrame(update);
+        }, wait);
+      }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
@@ -138,6 +155,7 @@ export default function Header({ showScrim = false }: { showScrim?: boolean }) {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
+      if (timer) clearTimeout(timer);
     };
   }, []);
 
