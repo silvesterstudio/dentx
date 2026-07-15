@@ -86,7 +86,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ro" className={`${manrope.variable} ${playfair.variable} antialiased scroll-smooth`}>
+    <html
+      lang="ro"
+      className={`${manrope.variable} ${playfair.variable} antialiased scroll-smooth`}
+      // suppressHydrationWarning: the inline script below adds the `intro-pre`
+      // class to <html> during parse (before hydration) to stage the hero
+      // reveal, so the client className intentionally differs from the server's.
+      suppressHydrationWarning
+    >
       {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject
           attributes like cz-shortcut-listen onto <body> before React hydrates,
           which would otherwise log a hydration-mismatch warning. */}
