@@ -95,6 +95,15 @@ export default function Contact() {
             </div>
           </div>
         </div>
+
+        {/* developer credit — small line closing the footer */}
+        <div className="reveal" style={CREDIT}>
+          Dezvoltat de SilvesterStudio
+          <span style={{ opacity: 0.4, margin: "0 8px" }}>|</span>
+          <a href="tel:+37369647357" style={CREDIT_LINK}>
+            +373 69647357
+          </a>
+        </div>
       </div>
     </section>
   );
@@ -209,6 +218,21 @@ const VALUE: React.CSSProperties = {
   color: "#fbfbfb",
   fontSize: "clamp(16px, 1.1vw, 18px)",
   fontWeight: 500,
+  textDecoration: "none",
+};
+
+const CREDIT: React.CSSProperties = {
+  marginTop: "clamp(28px, 3.5vh, 44px)",
+  paddingTop: "clamp(14px, 1.8vh, 20px)",
+  paddingBottom: "clamp(4px, 1vh, 10px)",
+  borderTop: "1px solid rgba(251,251,251,0.12)",
+  color: "rgba(251,251,251,0.45)",
+  fontSize: 13,
+  fontWeight: 500,
+};
+
+const CREDIT_LINK: React.CSSProperties = {
+  color: "rgba(251,251,251,0.45)",
   textDecoration: "none",
 };
 
