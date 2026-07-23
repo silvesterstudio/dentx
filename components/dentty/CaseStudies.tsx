@@ -44,6 +44,16 @@ export default function CaseStudies() {
     const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
     let raf = 0;
+    // Holds the pending warm-up "park it back" timeout so the real expand can
+    // cancel it (see warmUp() below). Declared HERE — above update() — because
+    // update() reads it, and update() is called synchronously at the end of this
+    // effect BEFORE its old declaration site further down. On a fresh load at the
+    // top of the page update() early-returns (inactive) before touching it, so the
+    // temporal-dead-zone was hidden; but a language switch WHILE on the last two
+    // sections re-runs this effect with the overlay already active, so update()
+    // reached the access before init and threw "Cannot access 'warmSettle' before
+    // initialization", crashing the page. Hoisting the `let` fixes it.
+    let warmSettle = 0;
 
     // The overlay content (cards, quote blocks, words, caption, gradient) is
     // STATIC — it's rendered once from `cases` and never changes. Resolve every
@@ -563,8 +573,8 @@ export default function CaseStudies() {
     // then back). Paint the whole subtree ONCE at near-zero opacity during idle
     // time so all that cold work happens invisibly long before Servicii.
     let warmed = false;
-    // holds the pending "park it back" timeout so the real expand can cancel it.
-    let warmSettle = 0;
+    // warmSettle is declared at the top of this effect (above update()) — see the
+    // note there for why it can't live here anymore.
     const warmUp = () => {
       if (warmed) return;
       warmed = true;
