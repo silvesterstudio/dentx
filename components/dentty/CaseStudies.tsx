@@ -293,6 +293,18 @@ export default function CaseStudies() {
         reset(tile);
         return;
       }
+      // Cazuri is fully handed off once Contact covers the viewport (its top has
+      // reached/passed the screen top → the lift is complete). Past that point
+      // there's no expand/conveyor/lift left to show, so treat it as inactive and
+      // RELEASE the pin. Otherwise `wantActive` stays true forever below Servicii
+      // (scroll0 only grows), leaving #services-stage pinned position:fixed at the
+      // viewport bottom — which, on mobile, peeks out from behind the footer when
+      // you rubber-band-overscroll at the bottom (the reported bug). `reset()`
+      // un-pins the stage and hides the overlay; scrolling back up re-activates it.
+      if (contact && contact.getBoundingClientRect().top <= 0) {
+        reset(tile);
+        return;
+      }
       // active again — re-arm reset() so it fires once when we next go inactive
       settledInactive = false;
       // If a background warm-up is still parked as a near-invisible fullscreen
